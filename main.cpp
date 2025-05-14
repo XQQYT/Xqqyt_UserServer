@@ -1,3 +1,10 @@
+/*
+ * Xqqyt_UserServer
+ * Author: XQQYT
+ * License: MIT
+ * Year: 2025
+ */
+
 #include <iostream>
 #include "Server.h"
 int main(int argc, char *argv[])

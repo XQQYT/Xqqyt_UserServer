@@ -1,3 +1,10 @@
+/*
+ * Xqqyt_UserServer
+ * Author: XQQYT
+ * License: MIT
+ * Year: 2025
+ */
+
 #ifndef SERVER_H
 #define SERVER_H
 

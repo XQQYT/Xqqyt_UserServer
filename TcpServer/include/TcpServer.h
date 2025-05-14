@@ -1,3 +1,10 @@
+/*
+ * Xqqyt_UserServer
+ * Author: XQQYT
+ * License: MIT
+ * Year: 2025
+ */
+
 #ifndef _TCPSERVER_H
 #define _TCPSERVER_H
 
