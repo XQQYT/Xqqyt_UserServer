@@ -5,6 +5,7 @@ project(Xqqyt_UserServer)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+add_subdirectory(ThreadPool)
 add_subdirectory(TcpServer)
 
 # 设置源码路径（确保包含所有.cpp文件）

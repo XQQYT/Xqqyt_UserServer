@@ -13,7 +13,7 @@ private:
     void haveNewClientMsg(const int socket) override;
     void clientDisconnect(const int socket) override;
     void incompleteMsg(const int socket) override;
-    static void dealClient(const int socket,RecvMsg msg);
+    static void dealClient(const int socket,std::string msg);
 
 };
 
