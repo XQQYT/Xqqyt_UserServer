@@ -14,6 +14,9 @@
 #include <sstream>
 #include <iomanip>
 #include <mutex>
+
+#include "ThreadPool.hpp"
+
 static const int s_send_block_size=5120;
 
 struct SocketInfo
@@ -56,6 +59,8 @@ public:
 private:
     bool checkClientDisconnected(int socket);
 
+protected:
+    std::unique_ptr<ThreadPool<int, std::string>> deal_msg_thread_pool;
 private:
 	int listen_socket;
 	struct sockaddr_in socket_addr;

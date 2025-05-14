@@ -2,9 +2,9 @@
 
 
 
-void Server::dealClient(const int socket,RecvMsg msg)
+void Server::dealClient(const int socket,std::string msg)
 {
-    std::cout<<"receive msg -> "<<msg.ptr<<std::endl;
+    std::cout<<"receive msg -> "<<msg<<std::endl;
 }
 
 
@@ -27,7 +27,7 @@ void Server::haveNewClientMsg(const int socket)
     RecvMsg msg=recvMsg(socket);
     if(msg.ptr==nullptr)
         return;
-    dealClient(socket,msg);
+    deal_msg_thread_pool->addTask(&Server::dealClient,socket,std::string(msg.ptr,msg.len));
 }
 
 void Server::clientDisconnect(const int socket)

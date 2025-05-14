@@ -8,4 +8,5 @@ target_include_directories(TcpServer PUBLIC
 
 target_link_libraries(TcpServer
     pthread
+    ThreadPool
 )

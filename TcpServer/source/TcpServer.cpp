@@ -41,6 +41,8 @@ TcpServer::TcpServer(const int port, const uint32_t recvbufmax, const uint32_t c
 	this->recv_buf_max = recvbufmax;
 	this->client_max = clientmax;
     shutdown=false;
+
+	deal_msg_thread_pool = std::make_unique<ThreadPool<int, std::string>>(8,16,1024,ThreadPoolType::NORMAL);
 }
 
 
