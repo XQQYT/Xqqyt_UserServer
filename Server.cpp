@@ -6,12 +6,12 @@
  */
 
 #include "Server.h"
-
-
+#include "MsgDecoder.h"
 
 void Server::dealClient(const int socket,std::string msg)
 {
     std::cout<<"receive msg -> "<<msg<<std::endl;
+    MsgDecoder::decode(socket, std::move(msg));
 }
 
 

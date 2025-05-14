@@ -1,0 +1,73 @@
+#ifndef _JSON_ENCODER_H_
+#define _JSON_ENCODER_H_
+
+#include <iostream>
+#include <string>
+#include "rapidjson/document.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
+
+enum class LogInType {
+    PASS,
+    ERROR,
+    BAN
+};
+
+
+enum class OKType{
+    SIGNUP
+};
+
+
+enum class ErrorType{
+    OC_CONFLICT
+};
+
+
+
+class JsonEncoder {
+public:
+    class OCUpdateJson{
+    public:
+        OCUpdateJson();
+        ~OCUpdateJson();
+        void addContent(const std::string oldoc,const std::string newoc);
+        void getString(std::string& result);
+    private:
+        rapidjson::Document* doc;
+
+    };
+
+    class NameUpdateJson{
+    public:
+        NameUpdateJson();
+        ~NameUpdateJson();
+        void addContent(const std::string oc,const std::string newname);
+        void getString(std::string& result);
+    private:
+        rapidjson::Document* doc;
+
+    };
+
+
+public:
+    static JsonEncoder& getInstance();
+    void loginJson(std::string& json, const LogInType& type);
+    void sendMsg(std::string& json, const std::string& msg, const std::string& src_oc);
+    void updateFriendOC(std::string& json,const std::string& oldoc,const std::string& newoc);
+    void updateFriendName(std::string& json,const std::string& oc,const std::string& newname);
+public:
+    void OkMsg(std::string& json,OKType type);
+    void ErrorMsg(std::string& json,ErrorType type);
+    void HeartBeatMsg(std::string& json);
+private:
+    //JsonEncoder() : buffer(), writer(buffer) {}
+    JsonEncoder(){}
+    JsonEncoder(const JsonEncoder&) = delete;
+
+    ~JsonEncoder() { delete instance; } // ȷ��ɾ������ʵ��
+
+    static JsonEncoder* instance;
+};
+
+#endif
