@@ -7,10 +7,10 @@
 
 #include "Server.h"
 #include "MsgDecoder.h"
+#include <functional>
 
 void Server::dealClient(const int socket,std::string msg)
 {
-    std::cout<<"receive msg -> "<<msg<<std::endl;
     MsgDecoder::decode(socket, std::move(msg));
 }
 
@@ -34,7 +34,7 @@ void Server::haveNewClientMsg(const int socket)
     RecvMsg msg=recvMsg(socket);
     if(msg.ptr==nullptr)
         return;
-    deal_msg_thread_pool->addTask(&Server::dealClient,socket,std::string(msg.ptr,msg.len));
+    deal_msg_thread_pool->addTask(std::bind(&Server::dealClient,this,socket,std::string(msg.ptr,msg.len)));
 }
 
 void Server::clientDisconnect(const int socket)

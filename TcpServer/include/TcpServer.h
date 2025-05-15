@@ -23,6 +23,7 @@
 #include <mutex>
 
 #include "ThreadPool.hpp"
+#include "MySqlConnPool.h"
 
 static const int s_send_block_size=5120;
 
@@ -67,7 +68,9 @@ private:
     bool checkClientDisconnected(int socket);
 
 protected:
-    std::unique_ptr<ThreadPool<int, std::string>> deal_msg_thread_pool;
+    std::unique_ptr<ThreadPool<>> deal_msg_thread_pool;
+    std::unique_ptr<MySqlConnPool> mysql_conn_pool;
+    
 private:
 	int listen_socket;
 	struct sockaddr_in socket_addr;
