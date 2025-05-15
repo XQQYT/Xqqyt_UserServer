@@ -1,4 +1,5 @@
-#include "JsonHandler.h"
+#include "JsonStrategy.h"
+#include "MsgDecoder.h"
 
 JsonStrategy* JsonStrategyFactory::createStrategy(const std::string& type)
 {
@@ -21,9 +22,9 @@ void LoginStrategy::execute(const int socket,const rapidjson::Document* content)
         delete content;
         return;
     }
-    if(content->HasMember("useroc")&&content->HasMember("password"))
+    if(content->HasMember("username")&&content->HasMember("password"))
     {
-        std::string useroc=(*content)["useroc"].GetString();
+        std::string useroc=(*content)["username"].GetString();
         std::string password=(*content)["password"].GetString();
         std::cout<<"useroc "<<useroc<<"password "<<password<<std::endl;
     }

@@ -62,7 +62,6 @@ public:
 
     RecvMsg recvMsg(const int socket);
 
-
 	struct SocketInfo getSocketInfo(const int socket);
 
 private:
@@ -71,7 +70,7 @@ private:
 
 protected:
     std::unique_ptr<ThreadPool<>> deal_msg_thread_pool;
-    std::unique_ptr<MySqlConnPool> mysql_conn_pool;
+    std::shared_ptr<MySqlConnPool> mysql_conn_pool;
     
 private:
 	int listen_socket;

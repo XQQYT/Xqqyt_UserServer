@@ -1,5 +1,5 @@
-#ifndef _JSONHANDLER_H_
-#define _JSONHANDLER_H_
+#ifndef _JSONSTRATEGY_H_
+#define _JSONSTRATEGY_H_
 
 #include "JsonEncoder.h"
 #include <fstream>
@@ -24,7 +24,5 @@ class JsonStrategyFactory {
 public:
     static JsonStrategy* createStrategy(const std::string& type);
 };
-
-
 
 #endif

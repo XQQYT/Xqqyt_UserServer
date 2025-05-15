@@ -1,7 +1,13 @@
 #include "MsgDecoder.h"
 
+std::shared_ptr<MySqlConnPool> MsgDecoder::mysql_conn_pool_instance = nullptr;
+
 void MsgDecoder::decode(const int socket,std::string msg)
 {
+	if(!mysql_conn_pool_instance)
+	{
+		throw std::runtime_error("Failed to decode msg, The connection pool is not initialized");
+	}
 	rapidjson::Document doc;
     doc.Parse(msg.c_str());
     if (doc.HasMember("type"))
@@ -19,4 +25,14 @@ void MsgDecoder::decode(const int socket,std::string msg)
 			}
 		}
 	}
+}
+
+void MsgDecoder::setMySqlConnPool(std::shared_ptr<MySqlConnPool> instance)
+{
+	mysql_conn_pool_instance = instance;
+}
+
+std::shared_ptr<MySqlConnPool> MsgDecoder::getMySqlConnPool()
+{
+	return mysql_conn_pool_instance;
 }
