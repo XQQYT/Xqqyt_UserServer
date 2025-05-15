@@ -18,7 +18,7 @@ void Server::dealClient(const int socket,std::string msg)
 Server::Server(const int port, const uint32_t recvbufmax, const uint32_t clientmax)
     :TcpServer(port,recvbufmax,clientmax)
 {
-
+    MsgDecoder::setMySqlConnPool(mysql_conn_pool);
 }
 
 

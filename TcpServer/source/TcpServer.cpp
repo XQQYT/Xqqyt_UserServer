@@ -12,7 +12,7 @@ std::mutex TcpServer::mtx;
 
 TcpServer::TcpServer(const int port, const uint32_t recvbufmax, const uint32_t clientmax):
 	deal_msg_thread_pool(std::make_unique<ThreadPool<>>(8,16,1024,ThreadPoolType::NORMAL)),
-	mysql_conn_pool(std::make_unique<MySqlConnPool>())
+	mysql_conn_pool(std::make_shared<MySqlConnPool>())
 {
     std::cout<<"User Server is running in "<<port<<std::endl;
 	evs = nullptr;
