@@ -106,4 +106,5 @@ void SqlConnSet::clearSqlSet()
         delete cur_driver;
         std::cout<<"delete a driver"<<std::endl;
     }
+    std::cout<<"clear mysql conn pool done"<<std::endl;
 }

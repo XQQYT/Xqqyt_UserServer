@@ -42,9 +42,10 @@ class TcpServer
 {
 public:
 	TcpServer(const int port, const uint32_t recvbufmax = 1024, const uint32_t clientmax = 256);
-
+    ~TcpServer(){
+        closeServer();
+    }
 	void startListen();
-	void closeServer();
 
 	virtual void haveNewConnection(const int socket) = 0;
 
@@ -65,6 +66,7 @@ public:
 	struct SocketInfo getSocketInfo(const int socket);
 
 private:
+    void closeServer();
     bool checkClientDisconnected(int socket);
 
 protected:
@@ -78,7 +80,7 @@ private:
 	uint32_t client_max;
 	struct epoll_event* evs;
 	int my_epoll;
-	bool shutdown;
+	std::atomic<bool> shutdown;
     static std::mutex mtx;
 };
 

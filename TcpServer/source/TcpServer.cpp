@@ -66,9 +66,15 @@ void TcpServer::startListen()
 
 		struct sockaddr_in clientinfo;
 		socklen_t len = sizeof(clientinfo);
-		if (num == -1)
+		if (num < 0)
 		{
-			std::cerr << "epoll_wait failed with error: " << errno << std::endl;
+			if (errno == EINTR) {
+				std::cerr << "epoll_wait interrupted by signal\n";
+				break;
+			} else {
+				perror("epoll_wait failed");
+				continue;
+			}
 		}
 		for (int i = 0; i < num; i++)
 		{
@@ -117,6 +123,9 @@ void TcpServer::closeServer()
 	if (listen_socket == -1)
 		throw std::runtime_error("socket is null");
 	close(listen_socket);
+	int tmp = socket(AF_INET, SOCK_STREAM, 0);
+    connect(tmp, (struct sockaddr*)&socket_addr, sizeof(socket_addr));
+    close(tmp);
 }
 
 

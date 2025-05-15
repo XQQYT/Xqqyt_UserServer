@@ -17,10 +17,10 @@ public:
     ~MySqlConnPool();
     MySqlDriver* acquire();
     void release(MySqlDriver* driver);
+    void closeConnPool();
 private:
     void readConf();
     void monitorFunc();
-    void closeConnPool();
 private:
     static std::string host;
     static std::string user;
