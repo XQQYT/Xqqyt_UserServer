@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_subdirectory(ThreadPool)
 add_subdirectory(MsgHandler)
+add_subdirectory(Security)
 add_subdirectory(MySqlConnPool)
 add_subdirectory(TcpServer)
 
@@ -35,6 +36,7 @@ add_executable(${PROJECT_NAME} ${SRC_PATH})
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
     MsgHandler
+    OpensslHandler
     TcpServer
     pthread
 )

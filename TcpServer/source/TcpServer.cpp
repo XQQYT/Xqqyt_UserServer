@@ -188,11 +188,6 @@ void TcpServer::sendMsg(const int socket, std::string& msg)
 
 }
 
-
-
-
-
-
 void TcpServer::write(const int socket, const char* msg,int len)
 {
     send(socket, msg, len, 0);
@@ -219,13 +214,13 @@ RecvMsg TcpServer::recvMsg(const int socket) {
     try {
         constexpr int BUFFER_SIZE = 100;
         auto buffer = new char[BUFFER_SIZE];
-        int byte_recv = recv(socket, buffer, BUFFER_SIZE, 0);
+        uint32_t byte_recv = recv(socket, buffer, BUFFER_SIZE, 0);
 
         if (byte_recv <= 0) {
             std::cerr << "recv() 错误，错误码 -> " << errno
                       << ", 错误信息: " << strerror(errno) << std::endl;
 
-            return RecvMsg{nullptr, -1};
+            return RecvMsg{nullptr, 0};
         }
 
         std::string received_data(buffer, byte_recv);
@@ -239,7 +234,7 @@ RecvMsg TcpServer::recvMsg(const int socket) {
         while (recv(socket, unused, sizeof(unused) - 1, 0) > 0) {}
 
         incompleteMsg(socket);  // 可能需要清理粘包残留或关闭连接等
-        return RecvMsg{nullptr, -1};
+        return RecvMsg{nullptr, 0};
     }
 }
 

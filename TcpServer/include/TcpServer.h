@@ -35,7 +35,7 @@ struct SocketInfo
 
 struct RecvMsg{
     char* ptr;
-    int len;
+    uint32_t len;
 };
 
 class TcpServer
