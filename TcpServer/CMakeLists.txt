@@ -10,4 +10,5 @@ target_link_libraries(TcpServer
     pthread
     ThreadPool
     MySqlConnPool
+    OpensslHandler
 )

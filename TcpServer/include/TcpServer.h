@@ -24,6 +24,8 @@
 
 #include "ThreadPool.hpp"
 #include "MySqlConnPool.h"
+#include "OpensslHandler.h"
+#include <unordered_map>
 
 static const int s_send_block_size=5120;
 
@@ -34,7 +36,7 @@ struct SocketInfo
 };
 
 struct RecvMsg{
-    char* ptr;
+    uint8_t* ptr;
     uint32_t len;
 };
 
@@ -50,6 +52,10 @@ public:
 	virtual void haveNewConnection(const int socket) = 0;
 
     virtual void haveNewClientMsg(const int socket) = 0;
+
+	virtual void haveTLSRequest(const int socket) = 0;
+	
+	virtual void ClientAuthentication(const int socket, uint8_t* session_id) = 0;
 
     virtual void incompleteMsg(const int socket) = 0;
 
@@ -81,6 +87,7 @@ private:
 	int my_epoll;
 	std::atomic<bool> shutdown;
     static std::mutex mtx;
+	OpensslHandler openssl_handler;
 };
 
 #endif

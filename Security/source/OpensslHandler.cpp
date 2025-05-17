@@ -2,6 +2,8 @@
 #include <iostream>
 #include <cstring> 
 #include <arpa/inet.h>
+#include <iomanip>
+#include <openssl/sha.h>
 
 OpensslHandler::OpensslHandler()
 {
@@ -15,34 +17,59 @@ OpensslHandler::OpensslHandler()
     SSL_CTX_use_PrivateKey_file(ctx, "server.key", SSL_FILETYPE_PEM);
 }
 
-uint8_t* OpensslHandler::dealTls(int socket)
-{
+void OpensslHandler::dealTls(int socket, std::function<void(bool, TlsInfo)> callback) {
     SSL* ssl = SSL_new(ctx);
+    if (!ssl) {
+        std::cerr << "SSL_new failed" << std::endl;
+        callback(false, {nullptr, nullptr});
+        return;
+    }
+
     SSL_set_fd(ssl, socket);
 
     if (SSL_accept(ssl) <= 0) {
         std::cerr << "SSL handshake failed" << std::endl;
+        ERR_print_errors_fp(stderr);
+        SSL_shutdown(ssl);
         SSL_free(ssl);
-        return nullptr;
+        callback(false, {nullptr, nullptr});
+        return;
     }
 
-    unsigned char *key = new unsigned char[32]();
-    if (RAND_bytes(key, 32) != 1) {
-        std::cerr << "Failed to generate random key" << std::endl;
+    uint8_t*  key = new uint8_t[32];
+    uint8_t* session_id = new uint8_t[32];
+
+    if (RAND_bytes(key, 32) != 1 || RAND_bytes(session_id, 32) != 1) {
+        std::cerr << "Failed to generate random key or session id" << std::endl;
+        SSL_shutdown(ssl);
         SSL_free(ssl);
-        return nullptr;
+        callback(false, {nullptr, nullptr});
+        return;
     }
 
-    int bytesWritten = SSL_write(ssl, key, 32);
-    if (bytesWritten <= 0) {
+    if (SSL_write(ssl, key, 32) <= 0) {
         std::cerr << "Failed to send key to client" << std::endl;
-    } else {
-        std::cout << "Sent 256-bit key to client over TLS" << std::endl;
+        SSL_shutdown(ssl);
+        SSL_free(ssl);
+        callback(false, {nullptr, nullptr});
+        return;
     }
+
+    if (SSL_write(ssl, session_id, 32) <= 0) {
+        std::cerr << "Failed to send session id to client" << std::endl;
+        SSL_shutdown(ssl);
+        SSL_free(ssl);
+        callback(false, {nullptr, nullptr});
+        return;
+    }
+
+    std::cout << "Sent key and session id to client over TLS" << std::endl;
 
     SSL_shutdown(ssl);
     SSL_free(ssl);
-    return key;
+
+    std::cout<<"5"<<std::endl;
+    callback(true, {key, session_id});
 }
 
 OpensslHandler::ParsedPayload OpensslHandler::parseMsgPayload(const uint8_t* full_msg ,const uint32_t length) {
@@ -50,27 +77,12 @@ OpensslHandler::ParsedPayload OpensslHandler::parseMsgPayload(const uint8_t* ful
 
     size_t offset = 0;
 
-    // 1. 解析 Header
-    if (length < sizeof(Header)) {
-        throw std::runtime_error("消息太短，缺少 Header");
-    }
-    std::memcpy(&result.header, full_msg, sizeof(Header));
-    result.header.magic = ntohs(result.header.magic);
-    result.header.length = ntohl(result.header.length);
-    offset += sizeof(Header);
-
-    // 2. 校验 payload 长度是否符合
-    if (length != sizeof(Header) + result.header.length) {
-        std::cout<<"length  "<<length<<"  "<<sizeof(Header) + result.header.length<<std::endl;;
-        // throw std::runtime_error("消息长度与 Header 中标记不一致");
-    }
-
     // 3. 解析 IV（16字节）
     result.iv.assign(full_msg + offset, full_msg + offset + 16);
     offset += 16;
 
     // 4. 解析密文
-    size_t cipher_len = result.header.length - 16 - 32;
+    size_t cipher_len = length - 16 - 32;
     result.encrypted_data.assign(full_msg + offset, full_msg + offset + cipher_len);
     offset += cipher_len;
 
@@ -80,12 +92,36 @@ OpensslHandler::ParsedPayload OpensslHandler::parseMsgPayload(const uint8_t* ful
     return result;
 }
 
-bool OpensslHandler::aesDecrypt(const std::vector<uint8_t>& encrypted_data,
+bool verify_sha256(const std::vector<uint8_t>& data, const std::vector<uint8_t>& expected_hash) {
+    if (expected_hash.size() != SHA256_DIGEST_LENGTH) {
+        std::cerr << "Invalid hash length." << std::endl;
+        return false;
+    }
+
+    // 计算实际的 SHA-256 哈希
+    uint8_t hash[SHA256_DIGEST_LENGTH];
+    SHA256(data.data(), data.size(), hash);
+
+    // 比较实际哈希和期望哈希
+    return std::memcmp(hash, expected_hash.data(), SHA256_DIGEST_LENGTH) == 0;
+}
+
+bool OpensslHandler::verifyAndDecrypt(const std::vector<uint8_t>& encrypted_data,
     const uint8_t* key,
     const std::vector<uint8_t>& iv,
-    std::vector<uint8_t>& out_plaintext) {
+    std::vector<uint8_t>& out_plaintext,
+    std::vector<uint8_t>& sha256) {
     if (iv.size() != AES_BLOCK_SIZE) {
         std::cerr << "IV size incorrect" << std::endl;
+        return false;
+    }
+
+    std::vector<uint8_t> iv_encrypted(iv.begin(),iv.end());
+    iv_encrypted.insert(iv_encrypted.end(), encrypted_data.begin(), encrypted_data.end());
+
+    if(!verify_sha256(iv_encrypted, sha256))
+    {
+        std::cout<<"sha256校验失败"<<std::endl;
         return false;
     }
 

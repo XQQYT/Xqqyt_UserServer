@@ -11,20 +11,20 @@
 
 void Server::dealClient(const int socket, uint8_t* msg, uint32_t length)
 {
+    std::cout<<"进入业务代码解析"<<std::endl;
     // 检查是否为业务数据，排除是tls客户端挥手的报文
-    if (*(msg) == 0xAB && *(msg + 1) == 0xCD)
+    auto parsed = openssl_handler.parseMsgPayload(msg,length);
+
+    std::vector<uint8_t> result_vec;
+    if(openssl_handler.verifyAndDecrypt(parsed.encrypted_data,socket_aeskey[socket],parsed.iv,result_vec, parsed.sha256))
     {
-        auto parsed = openssl_handler.parseMsgPayload(msg,length);
-
-        std::vector<uint8_t> result_vec;
-        openssl_handler.aesDecrypt(parsed.encrypted_data,socket_aeskey[socket],parsed.iv,result_vec);
-
         std::string plaintext_str(result_vec.begin(), result_vec.end());
         plaintext_str.resize(plaintext_str.size()-4);
-
+    
         std::cout<<"result "<<plaintext_str<<std::endl;
-        // MsgDecoder::decode(socket, std::move(msg));
     }
+    // MsgDecoder::decode(socket, std::move(msg));
+    delete[] msg;
 }
 
 Server::Server(const int port, const uint32_t recvbufmax, const uint32_t clientmax)
@@ -43,18 +43,35 @@ Server::~Server()
 void Server::haveNewConnection(const int socket)
 {
     std::cout << "have new connection" << std::endl;
-    uint8_t* key = openssl_handler.dealTls(socket);
-    socket_aeskey.insert({socket,key});
-    this->addToEpoll(socket);
+    addToEpoll(socket);
+}
+
+void Server::haveTLSRequest(const int socket)
+{
+    openssl_handler.dealTls(socket,[this,socket](bool ret, OpensslHandler::TlsInfo tls_info){
+        sessionid_key.insert({{tls_info.session_id , 32},tls_info.key});
+    });
+}
+
+void Server::ClientAuthentication(const int socket, uint8_t* session_id)
+{
+    if(sessionid_key.find({session_id, 32}) == sessionid_key.end())
+    {
+        std::cout<<"未找到session id"<<std::endl;
+        return;
+    }
+    socket_aeskey[socket] = sessionid_key[{session_id, 32}];
+    std::cout<<"client 注册成功"<<std::endl;
 }
 
 
 void Server::haveNewClientMsg(const int socket)
 {
+    std::cout<<"have client message"<<std::endl;
     RecvMsg msg=recvMsg(socket);
     if(msg.ptr==nullptr)
         return;
-    deal_msg_thread_pool->addTask(std::bind(&Server::dealClient,this,socket, reinterpret_cast<uint8_t*>(msg.ptr), msg.len));
+    deal_msg_thread_pool->addTask(std::bind(&Server::dealClient,this,socket, msg.ptr, msg.len));
 }
 
 void Server::clientDisconnect(const int socket)
