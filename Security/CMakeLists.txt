@@ -8,4 +8,5 @@ target_include_directories(OpensslHandler PUBLIC
 target_link_libraries(OpensslHandler
     ssl 
     crypto
+    sodium
 )

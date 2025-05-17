@@ -2,8 +2,8 @@
 #include <iostream>
 #include <cstring> 
 #include <arpa/inet.h>
-#include <iomanip>
 #include <openssl/sha.h>
+#include <sodium.h>
 
 OpensslHandler::OpensslHandler()
 {
@@ -15,6 +15,10 @@ OpensslHandler::OpensslHandler()
     
     SSL_CTX_use_certificate_file(ctx, "server.crt", SSL_FILETYPE_PEM);
     SSL_CTX_use_PrivateKey_file(ctx, "server.key", SSL_FILETYPE_PEM);
+
+    if (sodium_init() < 0) {
+        std::cerr << "libsodium 初始化失败\n";
+    }
 }
 
 void OpensslHandler::dealTls(int socket, std::function<void(bool, TlsInfo)> callback) {
@@ -68,7 +72,6 @@ void OpensslHandler::dealTls(int socket, std::function<void(bool, TlsInfo)> call
     SSL_shutdown(ssl);
     SSL_free(ssl);
 
-    std::cout<<"5"<<std::endl;
     callback(true, {key, session_id});
 }
 
@@ -176,4 +179,21 @@ bool OpensslHandler::verifyAndDecrypt(const std::vector<uint8_t>& encrypted_data
     out_plaintext.resize(out_plaintext.size() - sizeof(uint32_t));
 
     return true;
+}
+
+std::unique_ptr<std::string>  OpensslHandler::dealPasswordSafe(std::string& password)
+{
+    std::unique_ptr<std::string> hashed_password = std::make_unique<std::string>(crypto_pwhash_STRBYTES, '\0');
+
+    if (crypto_pwhash_str(
+            hashed_password->data(),
+            password.data(),
+            password.size(),
+            crypto_pwhash_OPSLIMIT_INTERACTIVE,
+            crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0) {
+        std::cerr << "哈希生成失败（可能是内存不足）\n";
+        return nullptr;
+    }
+    hashed_password->resize(strlen(hashed_password->c_str()));
+    return hashed_password;
 }

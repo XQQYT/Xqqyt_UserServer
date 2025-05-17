@@ -47,7 +47,6 @@ private:
 private:
     std::unordered_map<int, uint8_t*> socket_aeskey;
     std::unordered_map<ByteArray, uint8_t*,ByteArrayHash> sessionid_key;
-    OpensslHandler openssl_handler;
 };
 
 #endif // SERVER_H

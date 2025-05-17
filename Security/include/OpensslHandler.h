@@ -7,6 +7,7 @@
 #include <openssl/aes.h>
 #include <vector>
 #include <functional>
+#include <memory>
 
 class OpensslHandler
 {
@@ -23,7 +24,11 @@ public:
     };
 
 public:
-    OpensslHandler();
+    static OpensslHandler& getInstance()
+    {
+        static OpensslHandler instance;
+        return instance;
+    } 
     bool verifyAndDecrypt(const std::vector<uint8_t>& encrypted_data,
         const uint8_t* key,
         const std::vector<uint8_t>& iv,
@@ -31,7 +36,10 @@ public:
         std::vector<uint8_t>& sha256);
     ParsedPayload parseMsgPayload(const uint8_t* full_msg ,const uint32_t length);
     void dealTls(int socket,std::function<void(bool,TlsInfo)> callback);
+    std::unique_ptr<std::string>  dealPasswordSafe(std::string& password);
+
 private:
+    OpensslHandler();
     SSL_CTX* ctx;
 };
 

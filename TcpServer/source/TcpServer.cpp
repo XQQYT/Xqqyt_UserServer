@@ -279,13 +279,13 @@ RecvMsg TcpServer::recvMsg(const int socket) {
 			// 4. 返回完整数据
 			return RecvMsg{receive_msg, payload_length};
 		}
-		else
+		else if(peek_buffer[0] == 0x17 && peek_buffer[1] == 0x03)
 		{
-			throw std::runtime_error("unknow type");
+			std::cout<<"Tls close msg"<<std::endl;
+			throw std::runtime_error("");
 		}
     } catch (const std::exception& e) {
-        std::cerr << "recvMsg 异常: " << e.what() << std::endl;
-
+        std::cerr << e.what() << std::endl;
         // 清理 socket 中的缓存，防止粘包影响后续
         char unused[128];
         while (recv(socket, unused, sizeof(unused) - 1, 0) > 0) {}
