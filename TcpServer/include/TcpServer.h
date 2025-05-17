@@ -63,7 +63,7 @@ public:
 	void deleteFromEpoll(const int socket);
 
     static void write(const int socket, const char* msg,int len);
-    static void sendMsg(const int socket, std::string& msg);
+    static void sendMsg(const int socket, std::vector<uint8_t> msg);
 
     RecvMsg recvMsg(const int socket);
 

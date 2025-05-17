@@ -165,26 +165,24 @@ void TcpServer::deleteFromEpoll(const int socket)
 
 
 
-void TcpServer::sendMsg(const int socket, std::string& msg)
+void TcpServer::sendMsg(const int socket, std::vector<uint8_t>  msg)
 {
-    int total=msg.length();
+    int total=msg.size();
     int send_done=0;
     int block=0;
 
     try {
-        mtx.lock();
         while(send_done<total)
         {
             if(total-send_done<s_send_block_size)
                 block=total-send_done;
             else
                 block=s_send_block_size;
-            send(socket, msg.c_str()+send_done, block, 0);
+            send(socket, msg.data()+send_done, block, 0);
             send_done+=block;
+			std::cout<<"send "<<send_done<<" / "<<total<<std::endl;
         }
-        mtx.unlock();
     } catch (const std::exception& e) {
-        mtx.unlock();
     }
 
 }

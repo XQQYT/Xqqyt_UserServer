@@ -9,7 +9,7 @@
 #include "MsgDecoder.h"
 #include <functional>
 
-void Server::dealClient(const int socket, uint8_t* msg, uint32_t length)
+void Server::dealClient(const int socket, uint8_t* msg, uint32_t length ,uint8_t* key)
 {
     std::cout<<"进入业务代码解析"<<std::endl;
     auto parsed = OpensslHandler::getInstance().parseMsgPayload(msg,length);
@@ -18,7 +18,7 @@ void Server::dealClient(const int socket, uint8_t* msg, uint32_t length)
     if(OpensslHandler::getInstance().verifyAndDecrypt(parsed.encrypted_data,socket_aeskey[socket],parsed.iv,result_vec, parsed.sha256))
     {
         result_vec.resize(result_vec.size() - 4);
-        MsgDecoder::decode(socket, std::move(result_vec), parsed.is_binary);
+        MsgDecoder::decode(socket, std::move(result_vec), parsed.is_binary, key);
     }
     
     delete[] msg;
@@ -81,12 +81,13 @@ void Server::haveNewClientMsg(const int socket)
     RecvMsg msg=recvMsg(socket);
     if(msg.ptr==nullptr)
         return;
-    deal_msg_thread_pool->addTask(std::bind(&Server::dealClient,this,socket, msg.ptr, msg.len));
+    deal_msg_thread_pool->addTask(std::bind(&Server::dealClient,this,socket, msg.ptr, msg.len, socket_aeskey[socket]));
 }
 
 void Server::clientDisconnect(const int socket)
 {
     std::cout<<"client disconnect"<<std::endl;
+    socket_aeskey.erase(socket);
     this->deleteFromEpoll(socket);
 }
 

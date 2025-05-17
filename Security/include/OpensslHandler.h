@@ -38,7 +38,8 @@ public:
     ParsedPayload parseMsgPayload(const uint8_t* full_msg ,const uint32_t length);
     void dealTls(int socket,std::function<void(bool,TlsInfo)> callback);
     std::unique_ptr<std::string>  dealPasswordSafe(std::string& password);
-
+    uint8_t* aesEncrypt(std::vector<uint8_t>& data,const uint8_t* key);
+    uint8_t* sha256(uint8_t* str, size_t length);
 private:
     OpensslHandler();
     SSL_CTX* ctx;

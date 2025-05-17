@@ -43,7 +43,7 @@ private:
     void incompleteMsg(const int socket) override;
     void haveTLSRequest(const int socket) override;
     void ClientAuthentication(const int socket, uint8_t* session_id) override;
-    void dealClient(const int socket,uint8_t* msg, uint32_t length);
+    void dealClient(const int socket,uint8_t* msg, uint32_t length , uint8_t* key);
 private:
     std::unordered_map<int, uint8_t*> socket_aeskey;
     std::unordered_map<ByteArray, uint8_t*,ByteArrayHash> sessionid_key;

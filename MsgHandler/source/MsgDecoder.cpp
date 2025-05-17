@@ -2,7 +2,7 @@
 
 std::shared_ptr<MySqlConnPool> MsgDecoder::mysql_conn_pool_instance = nullptr;
 
-void MsgDecoder::decode(const int socket,std::vector<uint8_t> msg_vec , bool is_binary)
+void MsgDecoder::decode(const int socket,std::vector<uint8_t> msg_vec , bool is_binary, uint8_t* key)
 {
 	if(!mysql_conn_pool_instance)
 	{
@@ -29,7 +29,7 @@ void MsgDecoder::decode(const int socket,std::vector<uint8_t> msg_vec , bool is_
 				auto strategy= JsonStrategyFactory::createStrategy(type);
 				if (strategy != nullptr)
 				{
-					strategy->execute(socket, doc_content);
+					strategy->execute(socket, key, doc_content);
 				}
 				delete strategy;
 			}
@@ -39,7 +39,7 @@ void MsgDecoder::decode(const int socket,std::vector<uint8_t> msg_vec , bool is_
 	{
 		uint16_t type;
         memcpy(&type, msg_vec.data(), 2);
-        auto strategy = BinaryStrategyFactory::createStrategy(static_cast<BinaryStrategyFactory::MessageType>(type));
+        auto strategy = BinaryStrategyFactory::createStrategy(static_cast<MessageType>(type));
 		if (strategy != nullptr)
 		{
 			//注意传入的数组并没有去除type 的2字节

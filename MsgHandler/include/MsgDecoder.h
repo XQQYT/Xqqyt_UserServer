@@ -10,7 +10,7 @@
 
 class MsgDecoder {
 public:
-    static void decode(const int socket, std::vector<uint8_t> msg, bool is_binary);
+    static void decode(const int socket, std::vector<uint8_t> msg, bool is_binary, uint8_t* key);
     static void setMySqlConnPool(std::shared_ptr<MySqlConnPool> instance);
     static std::shared_ptr<MySqlConnPool> getMySqlConnPool();
 private:
