@@ -17,12 +17,10 @@ void Server::dealClient(const int socket, uint8_t* msg, uint32_t length)
     std::vector<uint8_t> result_vec;
     if(OpensslHandler::getInstance().verifyAndDecrypt(parsed.encrypted_data,socket_aeskey[socket],parsed.iv,result_vec, parsed.sha256))
     {
-        std::string plaintext_str(result_vec.begin(), result_vec.end());
-        plaintext_str.resize(plaintext_str.size()-4);
-    
-        std::cout<<"result "<<plaintext_str<<std::endl;
+        result_vec.resize(result_vec.size() - 4);
+        MsgDecoder::decode(socket, std::move(result_vec), parsed.is_binary);
     }
-    // MsgDecoder::decode(socket, std::move(msg));
+    
     delete[] msg;
 }
 
