@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <stdint.h>
 #include <vector>
+#include "GlobalEnum.h"
 
 class BinaryStrategy {
 public:
@@ -22,11 +23,6 @@ public:
 
 
 class BinaryStrategyFactory {
-public:
-    enum class MessageType : uint16_t {
-        USER_AVATAR = 0xAEAE            
-    };
-
 public:
     static BinaryStrategy* createStrategy(MessageType type);
 };

@@ -7,7 +7,7 @@
 
 class JsonStrategy {
 public:
-    virtual void execute(const int socket,const rapidjson::Document* content) const = 0;
+    virtual void execute(const int socket, uint8_t* key, const rapidjson::Document* content) const = 0;
     virtual ~JsonStrategy(){
     }
 
@@ -15,7 +15,7 @@ public:
 
 class LoginStrategy : public JsonStrategy{
 public:
-    void execute(const int socket,const rapidjson::Document* content) const override;
+    void execute(const int socket, uint8_t* key, const rapidjson::Document* content) const override;
     ~LoginStrategy(){}
 };
 

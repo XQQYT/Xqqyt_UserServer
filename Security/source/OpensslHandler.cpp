@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <openssl/sha.h>
 #include <sodium.h>
+#include <zlib.h>
 
 OpensslHandler::OpensslHandler()
 {
@@ -199,4 +200,59 @@ std::unique_ptr<std::string>  OpensslHandler::dealPasswordSafe(std::string& pass
     }
     hashed_password->resize(strlen(hashed_password->c_str()));
     return hashed_password;
+}
+
+uint8_t* OpensslHandler::aesEncrypt(std::vector<uint8_t>& data, const uint8_t* key)
+{
+    // 1. 计算 CRC32 并附加到数据末尾
+    uLong crc = crc32(0L, Z_NULL, 0);
+    crc = crc32(crc, data.data(), data.size());
+
+    uint8_t* crc_bytes = reinterpret_cast<uint8_t*>(&crc);
+    data.insert(data.end(), crc_bytes, crc_bytes + sizeof(crc));
+
+    // 2. 添加 PKCS#7 填充（正确的填充方式）
+    size_t blockSize = AES_BLOCK_SIZE;
+    size_t paddingLength = blockSize - (data.size() % blockSize);
+    data.insert(data.end(), paddingLength, static_cast<uint8_t>(paddingLength));
+
+    size_t paddedLen = data.size();
+
+    // 3. 生成随机 IV
+    uint8_t* iv = new uint8_t[blockSize];
+    if (RAND_bytes(iv, blockSize) != 1) {
+        std::cerr << "Failed to generate IV" << std::endl;
+        delete[] iv;
+        return nullptr;
+    }
+
+    AES_KEY aesKey;
+    if (AES_set_encrypt_key(key, 256, &aesKey) < 0) {
+        std::cerr << "Failed to set AES key" << std::endl;
+        delete[] iv;
+        return nullptr;
+    }
+
+    std::vector<uint8_t> encrypted(paddedLen);
+    uint8_t iv_copy[AES_BLOCK_SIZE];
+    memcpy(iv_copy, iv, AES_BLOCK_SIZE);
+
+    AES_cbc_encrypt(data.data(), encrypted.data(), paddedLen, &aesKey, iv_copy, AES_ENCRYPT);
+
+    data = std::move(encrypted);
+
+    return iv;
+}
+
+uint8_t* OpensslHandler::sha256(uint8_t* str, size_t length)
+{
+    uint8_t* digest = new uint8_t[SHA256_DIGEST_LENGTH];
+
+    if (!SHA256(str, length, digest)) {
+        std::cerr << "SHA256 calculation failed" << std::endl;
+        delete[] digest;
+        return nullptr;
+    }
+
+    return digest;
 }

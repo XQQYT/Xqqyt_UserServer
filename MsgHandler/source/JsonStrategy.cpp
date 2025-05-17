@@ -1,5 +1,7 @@
 #include "JsonStrategy.h"
 #include "MsgDecoder.h"
+#include "TcpServer.h"
+#include "MsgBuilder.h"
 
 JsonStrategy* JsonStrategyFactory::createStrategy(const std::string& type)
 {
@@ -14,7 +16,7 @@ JsonStrategy* JsonStrategyFactory::createStrategy(const std::string& type)
 	}
 }
 
-void LoginStrategy::execute(const int socket,const rapidjson::Document* content) const
+void LoginStrategy::execute(const int socket, uint8_t* key, const rapidjson::Document* content) const
 {
     if(content->HasParseError())
     {
@@ -27,6 +29,11 @@ void LoginStrategy::execute(const int socket,const rapidjson::Document* content)
         std::string useroc=(*content)["user_name"].GetString();
         std::string password=(*content)["password"].GetString();
         std::cout<<"useroc "<<useroc<<"password "<<password<<std::endl;
+
+        std::string response;
+        JsonEncoder::getInstance().loginJson(response,LogInType::PASS);
+        auto final_msg = MsgBuilder::getInstance().buildMsg(response,key);
+        TcpServer::sendMsg(socket, *final_msg->msg);
     }
     else
     {
