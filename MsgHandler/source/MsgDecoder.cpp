@@ -10,7 +10,11 @@ void MsgDecoder::decode(const int socket,std::string msg)
 	}
 	rapidjson::Document doc;
     doc.Parse(msg.c_str());
-    if (doc.HasMember("type"))
+	if (doc.HasParseError() || !doc.IsObject()) {
+		std::cerr << "Invalid JSON data received." << std::endl;
+		return;
+	}
+    if (doc.HasMember("type") )
 	{
 		std::string type = doc["type"].GetString();
 		if (doc.HasMember("content") && doc["content"].IsObject())

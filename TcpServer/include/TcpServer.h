@@ -24,6 +24,7 @@
 
 #include "ThreadPool.hpp"
 #include "MySqlConnPool.h"
+#include <unordered_map>
 
 static const int s_send_block_size=5120;
 
@@ -34,8 +35,8 @@ struct SocketInfo
 };
 
 struct RecvMsg{
-    char* ptr;
-    int len;
+    uint8_t* ptr;
+    uint32_t len;
 };
 
 class TcpServer
@@ -50,6 +51,10 @@ public:
 	virtual void haveNewConnection(const int socket) = 0;
 
     virtual void haveNewClientMsg(const int socket) = 0;
+
+	virtual void haveTLSRequest(const int socket) = 0;
+
+	virtual void ClientAuthentication(const int socket, uint8_t* session_id) = 0;
 
     virtual void incompleteMsg(const int socket) = 0;
 

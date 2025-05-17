@@ -7,6 +7,7 @@
 
 #include "TcpServer.h"
 #include <memory>
+#include <arpa/inet.h>
 
 std::mutex TcpServer::mtx;
 
@@ -83,8 +84,8 @@ void TcpServer::startListen()
 			{
 				int client_socket = accept(curfd, (sockaddr*)&clientinfo, &len);
 				char* s_addr = inet_ntoa(clientinfo.sin_addr);
-                //int flags=fcntl(client_socket, F_GETFL, 0);
-                //fcntl(client_socket,F_SETFL,flags|O_NONBLOCK);
+                // int flags=fcntl(client_socket, F_GETFL, 0);
+                // fcntl(client_socket,F_SETFL,flags|O_NONBLOCK);
 				haveNewConnection(client_socket);
 			}
 			else
@@ -188,11 +189,6 @@ void TcpServer::sendMsg(const int socket, std::string& msg)
 
 }
 
-
-
-
-
-
 void TcpServer::write(const int socket, const char* msg,int len)
 {
     send(socket, msg, len, 0);
@@ -217,33 +213,87 @@ bool TcpServer::checkClientDisconnected(int socket) {
 
 RecvMsg TcpServer::recvMsg(const int socket) {
     try {
-        constexpr int BUFFER_SIZE = 100;
-        auto buffer = new char[BUFFER_SIZE];
-        int byte_recv = recv(socket, buffer, BUFFER_SIZE, 0);
+		uint8_t peek_buffer[4];
+		int peeked = recv(socket, peek_buffer, sizeof(peek_buffer), MSG_PEEK);
 
-        if (byte_recv <= 0) {
-            std::cerr << "recv() 错误，错误码 -> " << errno
-                      << ", 错误信息: " << strerror(errno) << std::endl;
+		if(peek_buffer[0] == 0xEA && peek_buffer[1] == 0xEA)
+		{
+			std::cout<<"Tls请求"<<std::endl;
+			uint8_t unused[2];
+			recv(socket, unused , 2 , 0);
+			haveTLSRequest(socket);
+			return RecvMsg{nullptr, 0};
+		}
+		else if(peek_buffer[0] == 0xFA && peek_buffer[1] == 0xFA)
+		{
+			std::cout<<"用户注册"<<std::endl;
 
-            return RecvMsg{nullptr, -1};
-        }
+			uint8_t unused[2];
+			recv(socket, unused , 2 , 0);
 
-        std::string received_data(buffer, byte_recv);
+			constexpr int SESSIONID_SIZE = 32;
+			uint8_t session_id[SESSIONID_SIZE];
+			uint32_t sessionid_received = 0;
+			while (sessionid_received < SESSIONID_SIZE) {
+				int n = recv(socket, session_id + sessionid_received, SESSIONID_SIZE - sessionid_received, 0);
+				if (n <= 0) throw std::runtime_error("Header recv error");
+				sessionid_received += n;
+			}
+			ClientAuthentication(socket, session_id);
+			return RecvMsg{nullptr, 0};
 
-        return RecvMsg{buffer, byte_recv};
+		}
+		else if(peek_buffer[0] == 0xAB && peek_buffer[1] == 0xCD)
+		{
+			std::cout<<"用户消息"<<std::endl;
+			constexpr int HEADER_SIZE = 7;
+			uint8_t buffer[HEADER_SIZE] = {0};
+			uint32_t header_received = 0;
+			while (header_received < HEADER_SIZE) {
+				int n = recv(socket, buffer + header_received, HEADER_SIZE - header_received, 0);
+				if (n <= 0) throw std::runtime_error("Header recv error");
+				header_received += n;
+			}
 
+			uint32_t payload_length = 0;
+			memcpy(&payload_length, buffer + 3, sizeof(payload_length));
+			payload_length = ntohl(payload_length);
+
+			uint8_t* receive_msg = new uint8_t[payload_length];
+			uint32_t readed_length = 0;
+
+			while (readed_length < payload_length) {
+				int read_byte = recv(socket, receive_msg + readed_length, payload_length - readed_length, 0);
+				if (read_byte == 0) {
+					delete[] receive_msg;
+					throw std::runtime_error("peer closed");
+				}
+				if (read_byte < 0) {
+					delete[] receive_msg;
+					throw std::runtime_error("recv error");
+				}
+				readed_length += read_byte;
+				std::cout<<readed_length<<" / "<<payload_length<<std::endl;
+			}
+
+			// 4. 返回完整数据
+			return RecvMsg{receive_msg, payload_length};
+		}
+		else if(peek_buffer[0] == 0x17 && peek_buffer[1] == 0x03)
+		{
+			std::cout<<"Tls close msg"<<std::endl;
+			throw std::runtime_error("");
+		}
     } catch (const std::exception& e) {
-        std::cerr << "recvMsg 异常: " << e.what() << std::endl;
-
+        std::cerr << e.what() << std::endl;
+        // 清理 socket 中的缓存，防止粘包影响后续
         char unused[128];
         while (recv(socket, unused, sizeof(unused) - 1, 0) > 0) {}
 
-        incompleteMsg(socket);  // 可能需要清理粘包残留或关闭连接等
-        return RecvMsg{nullptr, -1};
+        incompleteMsg(socket);
+        return RecvMsg{nullptr, 0};
     }
 }
-
-
 
 SocketInfo TcpServer::getSocketInfo(const int socket)
 {
