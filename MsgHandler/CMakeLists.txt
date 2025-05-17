@@ -2,6 +2,7 @@ add_library(MsgHandler STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/source/JsonEncoder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/JsonStrategy.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/MsgDecoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/BinaryStrategy.cpp
 )
 
 target_include_directories(MsgHandler PUBLIC

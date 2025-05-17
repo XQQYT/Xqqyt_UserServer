@@ -80,12 +80,15 @@ OpensslHandler::ParsedPayload OpensslHandler::parseMsgPayload(const uint8_t* ful
 
     size_t offset = 0;
 
+    memcpy(&result.is_binary, full_msg, 1);
+    offset += 1;
+
     // 3. 解析 IV（16字节）
     result.iv.assign(full_msg + offset, full_msg + offset + 16);
     offset += 16;
 
     // 4. 解析密文
-    size_t cipher_len = length - 16 - 32;
+    size_t cipher_len = length - 16 - 32 - 1;
     result.encrypted_data.assign(full_msg + offset, full_msg + offset + cipher_len);
     offset += cipher_len;
 

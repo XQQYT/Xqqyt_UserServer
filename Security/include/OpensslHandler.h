@@ -16,6 +16,7 @@ public:
         std::vector<uint8_t> iv;
         std::vector<uint8_t> encrypted_data;
         std::vector<uint8_t> sha256;
+        uint8_t is_binary;
     };
     struct TlsInfo
     {

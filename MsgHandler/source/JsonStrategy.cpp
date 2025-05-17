@@ -22,9 +22,9 @@ void LoginStrategy::execute(const int socket,const rapidjson::Document* content)
         delete content;
         return;
     }
-    if(content->HasMember("username")&&content->HasMember("password"))
+    if(content->HasMember("user_name")&&content->HasMember("password"))
     {
-        std::string useroc=(*content)["username"].GetString();
+        std::string useroc=(*content)["user_name"].GetString();
         std::string password=(*content)["password"].GetString();
         std::cout<<"useroc "<<useroc<<"password "<<password<<std::endl;
     }
