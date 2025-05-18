@@ -6,10 +6,11 @@
 #include <stdint.h>
 #include <vector>
 #include "GlobalEnum.h"
+#include "MySqlConnPool.h"
 
 class BinaryStrategy {
 public:
-    virtual void execute(const int socket,std::vector<uint8_t> content) = 0;
+    virtual void execute(const int socket,std::vector<uint8_t> content, MySqlDriver* mysql_driver) = 0;
     virtual ~BinaryStrategy(){
     }
 
@@ -17,7 +18,7 @@ public:
 
 class UserAvatarStrategy : public BinaryStrategy{
 public:
-    void execute(const int socket,std::vector<uint8_t>  content) override;
+    void execute(const int socket,std::vector<uint8_t>  content, MySqlDriver* mysql_driver) override;
     ~UserAvatarStrategy(){}
 };
 

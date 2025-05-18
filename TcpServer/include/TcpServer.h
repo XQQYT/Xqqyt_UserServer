@@ -67,7 +67,12 @@ public:
 
     RecvMsg recvMsg(const int socket);
 
-	struct SocketInfo getSocketInfo(const int socket);
+	static struct SocketInfo getSocketInfo(const int socket);
+protected:
+	MySqlConnGuardPtr make_guard_ptr()
+	{
+		return MySqlConnGuardPtr(mysql_conn_pool);
+	};
 
 private:
     void closeServer();

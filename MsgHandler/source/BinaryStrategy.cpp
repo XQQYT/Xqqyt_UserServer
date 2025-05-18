@@ -18,7 +18,7 @@ BinaryStrategy* BinaryStrategyFactory::createStrategy(MessageType type)
 
 }
 
-void UserAvatarStrategy::execute(const int socket,std::vector<uint8_t>  content)
+void UserAvatarStrategy::execute(const int socket,std::vector<uint8_t>  content, MySqlDriver* mysql_driver)
 {
     std::string username(reinterpret_cast<const char*>(content.data() + 2), 15);
     std::cout<<"recv user avatar data "<<username<<std::endl;

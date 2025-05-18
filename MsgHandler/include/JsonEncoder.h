@@ -53,7 +53,7 @@ public:
 public:
     static JsonEncoder& getInstance();
     void loginJson(std::string& json, const LogInType& type);
-    void sendMsg(std::string& json, const std::string& msg, const std::string& src_oc);
+    void DeviceCode(std::string& json, const std::string code);
     void updateFriendOC(std::string& json,const std::string& oldoc,const std::string& newoc);
     void updateFriendName(std::string& json,const std::string& oc,const std::string& newname);
 public:

@@ -27,6 +27,7 @@ public:
     void freeRes();
     void resetResPos();
     void setResPos(unsigned int pos);
+    int64_t getLastInsertId();
 private:
     bool checkRes();
 private:

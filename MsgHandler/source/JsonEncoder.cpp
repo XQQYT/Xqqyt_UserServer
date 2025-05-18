@@ -48,7 +48,7 @@ void JsonEncoder::loginJson(std::string& json, const LogInType& type)
 	writer.Reset(buffer);
 }
 
-void JsonEncoder::sendMsg(std::string& json, const std::string& msg, const std::string& src_oc)
+void JsonEncoder::DeviceCode(std::string& json, const std::string code)
 {
 	rapidjson::Document doc;
 	doc.SetObject();
@@ -56,12 +56,11 @@ void JsonEncoder::sendMsg(std::string& json, const std::string& msg, const std::
 	auto& doc_allocator = doc.GetAllocator();
 
 
-	doc.AddMember("type", rapidjson::StringRef("scmessage"), doc_allocator);
+	doc.AddMember("type", rapidjson::StringRef("device_code"), doc_allocator);
 
 	doc.AddMember("content", rapidjson::Value().SetObject(), doc_allocator);
 
-    doc["content"].AddMember("targetoc", rapidjson::StringRef(src_oc.c_str()), doc_allocator);
-	doc["content"].AddMember("message", rapidjson::StringRef(msg.c_str()), doc_allocator);
+    doc["content"].AddMember("device_code", rapidjson::StringRef(code.c_str()), doc_allocator);
 
     rapidjson::StringBuffer buffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
