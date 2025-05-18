@@ -2,6 +2,9 @@
 #include "MsgDecoder.h"
 #include "TcpServer.h"
 #include "MsgBuilder.h"
+#include "OpensslHandler.h"
+
+static const char* avatar_dir = "User/Avatar/";
 
 JsonStrategy* JsonStrategyFactory::createStrategy(const std::string& type)
 {
@@ -10,6 +13,10 @@ JsonStrategy* JsonStrategyFactory::createStrategy(const std::string& type)
 	{
         return new LoginStrategy();
 	}
+    else if(type == "register")
+    {
+        return new RegisterStrategy();
+    }
     if (type == "register_device")
 	{
         return new RegisterDeviceStrategy();
@@ -75,16 +82,71 @@ void LoginStrategy::execute(const int socket, uint8_t* key, const rapidjson::Doc
         delete content;
         return;
     }
-    if(content->HasMember("user_name")&&content->HasMember("password"))
+    if(content->HasMember("user_name")&&content->HasMember("password")&&content->HasMember("device_code"))
     {
-        std::string useroc=(*content)["user_name"].GetString();
-        std::string password=(*content)["password"].GetString();
-        std::cout<<"useroc "<<useroc<<"password "<<password<<std::endl;
+        std::string username = (*content)["user_name"].GetString();
+        std::string password = (*content)["password"].GetString();
+        std::string device_code = (*content)["device_code"].GetString();
+
+        auto safe_password = OpensslHandler::getInstance().dealPasswordSafe(password);
+
+        std::cout<<"login safe password "<<*safe_password<<std::endl;
+
+        auto result = mysql_driver->preExecute("SELECT users.password FROM users WHERE username = ?",{username});
 
         std::string response;
-        JsonEncoder::getInstance().loginJson(response,LogInType::PASS);
+        if(result)
+        {
+            result->next();
+            bool status = OpensslHandler::getInstance().verifyPassword(password, result->getString("password"));
+            if(status)
+            {
+                JsonEncoder::getInstance().loginJson(response,LogInType::PASS);
+                mysql_driver->preExecute(
+                    "INSERT INTO user_device(user_name, device_code) VALUES(?, ?) "
+                    "ON DUPLICATE KEY UPDATE login_time = CURRENT_TIMESTAMP",
+                    {username, device_code}
+                );
+            }
+            else
+            {
+                JsonEncoder::getInstance().loginJson(response,LogInType::ERROR);
+            }
+        }
+        else
+        {   
+            JsonEncoder::getInstance().loginJson(response,LogInType::ERROR);
+        }
+
         auto final_msg = MsgBuilder::getInstance().buildMsg(response,key);
         TcpServer::sendMsg(socket, *final_msg->msg);
+    }
+    else
+    {
+        
+    }
+
+}
+
+void RegisterStrategy::execute(const int socket, uint8_t* key, const rapidjson::Document* content, MySqlDriver* mysql_driver) const
+{
+
+    if(!checkDocument(content))
+    {
+        delete content;
+        return;
+    }
+    if(content->HasMember("user_name")&&content->HasMember("password"))
+    {
+        std::string username = (*content)["user_name"].GetString();
+        std::string password = (*content)["password"].GetString();
+        std::string avatar_path = std::string(avatar_dir).append(username);
+
+        auto safe_password = OpensslHandler::getInstance().dealPasswordSafe(password);
+
+        std::cout<<"register safe password "<<*safe_password<<std::endl;
+
+        mysql_driver->preExecute("INSERT INTO users(username, password, avatar_url) VALUES(? , ? , ?)", {username, *safe_password, avatar_path});
     }
     else
     {

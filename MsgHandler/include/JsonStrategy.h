@@ -26,6 +26,12 @@ public:
     ~LoginStrategy(){}
 };
 
+class RegisterStrategy : public JsonStrategy{
+public:
+    void execute(const int socket, uint8_t* key, const rapidjson::Document* content, MySqlDriver* mysql_driver) const override;
+    ~RegisterStrategy(){}
+};
+
 class JsonStrategyFactory {
 public:
     static JsonStrategy* createStrategy(const std::string& type);

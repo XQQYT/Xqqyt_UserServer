@@ -30,9 +30,12 @@ sql::ResultSet* MySqlDriver::preExecute(std::string query,std::vector<std::strin
     {
         pre_stmt->setString(i+1,args[i]);
     }
-    res=pre_stmt->executeQuery();
-    if(!checkRes())
+    sql::ResultSet* res=pre_stmt->executeQuery();
+    if(checkRes())
+    {
         res = nullptr;
+        freeRes();
+    }
     return res;
 }
 
@@ -77,6 +80,7 @@ void MySqlDriver::setResPos(unsigned int pos)
 
 bool MySqlDriver::checkRes()
 {
+    if(!res) return false;
     bool is_valid = res->absolute(1);
     res->beforeFirst();
     return is_valid;

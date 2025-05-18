@@ -21,13 +21,13 @@ void JsonEncoder::loginJson(std::string& json, const LogInType& type)
 	std::string type_str;
 	switch (type) {
 	case LogInType::PASS:
-		type_str = "pass";
+		type_str = "success";
 		break;
 	case LogInType::ERROR:
-		type_str = "error";
+		type_str = "fail";
 		break;
 	case LogInType::BAN:
-		type_str = "ban";
+		type_str = "error";
 		break;
 	default:
 		throw std::runtime_error("Invalid LogInType");

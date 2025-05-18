@@ -44,6 +44,7 @@ public:
         : pool_(std::move(pool)), conn_(pool_->acquire()) {}
      ~MySqlConnGuardPtr() {
         std::cout<<"release a conn"<<std::endl;
+        conn_->freeRes();
         if (conn_) pool_->release(conn_);
     }
     MySqlConnGuardPtr(const MySqlConnGuardPtr&) = delete;
