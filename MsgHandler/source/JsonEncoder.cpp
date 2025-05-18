@@ -12,7 +12,7 @@ JsonEncoder& JsonEncoder::getInstance()
 	return *instance;
 }
 
-void JsonEncoder::loginJson(std::string& json, const LogInType& type)
+void JsonEncoder::ResponseJson(std::string& json, const ResponseType& type, const std::string& subtype)
 {
 	rapidjson::Document doc;
 	doc.SetObject();
@@ -20,13 +20,13 @@ void JsonEncoder::loginJson(std::string& json, const LogInType& type)
 	auto& doc_allocator = doc.GetAllocator();
 	std::string type_str;
 	switch (type) {
-	case LogInType::PASS:
+	case ResponseType::SUCCESS:
 		type_str = "success";
 		break;
-	case LogInType::ERROR:
+	case ResponseType::FAIL:
 		type_str = "fail";
 		break;
-	case LogInType::BAN:
+	case ResponseType::ERROR:
 		type_str = "error";
 		break;
 	default:
@@ -37,7 +37,7 @@ void JsonEncoder::loginJson(std::string& json, const LogInType& type)
 	doc.AddMember("content", rapidjson::Value().SetObject(), doc_allocator);
 
 	doc["content"].AddMember("status", rapidjson::StringRef(type_str.c_str()), doc_allocator);
-	doc["content"].AddMember("subtype", rapidjson::StringRef("login"), doc_allocator);
+	doc["content"].AddMember("subtype", rapidjson::StringRef(subtype.c_str()), doc_allocator);
 
     rapidjson::StringBuffer buffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
@@ -47,6 +47,7 @@ void JsonEncoder::loginJson(std::string& json, const LogInType& type)
 	buffer.Clear();
 	writer.Reset(buffer);
 }
+
 
 void JsonEncoder::DeviceCode(std::string& json, const std::string code)
 {

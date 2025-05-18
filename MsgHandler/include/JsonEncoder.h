@@ -7,10 +7,10 @@
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
 
-enum class LogInType {
-    PASS,
-    ERROR,
-    BAN
+enum class ResponseType {
+    SUCCESS,
+    FAIL,
+    ERROR
 };
 
 
@@ -52,7 +52,7 @@ public:
 
 public:
     static JsonEncoder& getInstance();
-    void loginJson(std::string& json, const LogInType& type);
+    void ResponseJson(std::string& json, const ResponseType& type, const std::string& subtype);
     void DeviceCode(std::string& json, const std::string code);
     void updateFriendOC(std::string& json,const std::string& oldoc,const std::string& newoc);
     void updateFriendName(std::string& json,const std::string& oc,const std::string& newname);
