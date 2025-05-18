@@ -120,6 +120,11 @@ void LoginStrategy::execute(const int socket, uint8_t* key, const rapidjson::Doc
 
         auto final_msg = MsgBuilder::getInstance().buildMsg(response,key);
         TcpServer::sendMsg(socket, *final_msg->msg);
+
+        //发送用户头像
+        std::string avatar_path = std::string(avatar_dir).append(username);
+        auto avatar_msg = MsgBuilder::getInstance().buildFile(MessageType::USER_AVATAR, username, avatar_path,key);
+        TcpServer::sendMsg(socket, *avatar_msg->msg);
     }
     else
     {
