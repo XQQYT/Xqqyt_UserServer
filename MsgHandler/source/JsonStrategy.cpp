@@ -101,7 +101,7 @@ void LoginStrategy::execute(const int socket, uint8_t* key, const rapidjson::Doc
             bool status = OpensslHandler::getInstance().verifyPassword(password, result->getString("password"));
             if(status)
             {
-                JsonEncoder::getInstance().loginJson(response,LogInType::PASS);
+                JsonEncoder::getInstance().ResponseJson(response,ResponseType::SUCCESS,"login");
                 mysql_driver->preExecute(
                     "INSERT INTO user_device(user_name, device_code) VALUES(?, ?) "
                     "ON DUPLICATE KEY UPDATE login_time = CURRENT_TIMESTAMP",
@@ -110,12 +110,12 @@ void LoginStrategy::execute(const int socket, uint8_t* key, const rapidjson::Doc
             }
             else
             {
-                JsonEncoder::getInstance().loginJson(response,LogInType::ERROR);
+                JsonEncoder::getInstance().ResponseJson(response,ResponseType::FAIL,"login");
             }
         }
         else
         {   
-            JsonEncoder::getInstance().loginJson(response,LogInType::ERROR);
+            JsonEncoder::getInstance().ResponseJson(response,ResponseType::FAIL,"login");
         }
 
         auto final_msg = MsgBuilder::getInstance().buildMsg(response,key);
@@ -151,7 +151,17 @@ void RegisterStrategy::execute(const int socket, uint8_t* key, const rapidjson::
 
         std::cout<<"register safe password "<<*safe_password<<std::endl;
 
-        mysql_driver->preExecute("INSERT INTO users(username, password, avatar_url) VALUES(? , ? , ?)", {username, *safe_password, avatar_path});
+        std::string response;
+        try{
+            mysql_driver->preExecute("INSERT INTO users(username, password, avatar_url) VALUES(? , ? , ?)", {username, *safe_password, avatar_path});
+            JsonEncoder::getInstance().ResponseJson(response,ResponseType::SUCCESS,"register");
+        }
+        catch(...)
+        {
+            JsonEncoder::getInstance().ResponseJson(response,ResponseType::FAIL,"register");
+        }
+        auto final_msg = MsgBuilder::getInstance().buildMsg(response,key);
+        TcpServer::sendMsg(socket, *final_msg->msg);
     }
     else
     {
