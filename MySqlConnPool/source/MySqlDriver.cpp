@@ -81,3 +81,21 @@ bool MySqlDriver::checkRes()
     res->beforeFirst();
     return is_valid;
 }
+
+int64_t MySqlDriver::getLastInsertId()
+{
+    if (!stmt) {
+        stmt = conn->createStatement();
+    }
+
+    if (res) {
+        delete res;
+        res = nullptr;
+    }
+
+    res = stmt->executeQuery("SELECT MAX(id) FROM devices");
+    if (res && res->next()) {
+        return res->getInt64(1);
+    }
+    return -1;
+}

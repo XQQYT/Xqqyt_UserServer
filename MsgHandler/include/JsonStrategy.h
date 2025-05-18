@@ -2,23 +2,29 @@
 #define _JSONSTRATEGY_H_
 
 #include "JsonEncoder.h"
+#include "MySqlConnPool.h"
 #include <fstream>
 #include <cstdio>
 
 class JsonStrategy {
 public:
-    virtual void execute(const int socket, uint8_t* key, const rapidjson::Document* content) const = 0;
+    virtual void execute(const int socket, uint8_t* key, const rapidjson::Document* content, MySqlDriver* mysql_driver) const = 0;
     virtual ~JsonStrategy(){
     }
 
 };
 
-class LoginStrategy : public JsonStrategy{
+class RegisterDeviceStrategy : public JsonStrategy{
 public:
-    void execute(const int socket, uint8_t* key, const rapidjson::Document* content) const override;
-    ~LoginStrategy(){}
+    void execute(const int socket, uint8_t* key, const rapidjson::Document* content, MySqlDriver* mysql_driver) const override;
+    ~RegisterDeviceStrategy(){}
 };
 
+class LoginStrategy : public JsonStrategy{
+public:
+    void execute(const int socket, uint8_t* key, const rapidjson::Document* content, MySqlDriver* mysql_driver) const override;
+    ~LoginStrategy(){}
+};
 
 class JsonStrategyFactory {
 public:
