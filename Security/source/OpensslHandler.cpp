@@ -244,6 +244,14 @@ uint8_t* OpensslHandler::aesEncrypt(std::vector<uint8_t>& data, const uint8_t* k
     return iv;
 }
 
+bool OpensslHandler::verifyPassword(const std::string& password, const std::string& hash) {
+    return crypto_pwhash_str_verify(
+               hash.c_str(),
+               password.c_str(),
+               password.size()
+           ) == 0;
+}
+
 uint8_t* OpensslHandler::sha256(uint8_t* str, size_t length)
 {
     uint8_t* digest = new uint8_t[SHA256_DIGEST_LENGTH];
