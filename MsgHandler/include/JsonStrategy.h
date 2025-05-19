@@ -32,6 +32,12 @@ public:
     ~RegisterStrategy(){}
 };
 
+class GetDeviceListStrategy : public JsonStrategy{
+public:
+    void execute(const int socket, uint8_t* key, const rapidjson::Document* content, MySqlDriver* mysql_driver) const override;
+    ~GetDeviceListStrategy(){}
+};
+
 class JsonStrategyFactory {
 public:
     static JsonStrategy* createStrategy(const std::string& type);

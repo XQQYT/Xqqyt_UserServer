@@ -73,6 +73,43 @@ void JsonEncoder::DeviceCode(std::string& json, const std::string code)
     writer.Reset(buffer);
 }
 
+void JsonEncoder::DeviceList(std::string& json, const std::vector<DeviceInfo> device_list)
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+    auto& allocator = doc.GetAllocator();
+
+    doc.AddMember("type", rapidjson::StringRef("device_list"), allocator);
+
+    rapidjson::Value content(rapidjson::kObjectType);
+    rapidjson::Value deviceArray(rapidjson::kArrayType);
+
+    for (const auto& device : device_list)
+    {
+        rapidjson::Value deviceObj(rapidjson::kObjectType);
+
+        deviceObj.AddMember("device_name", rapidjson::Value(device.device_name.c_str(), allocator), allocator);
+        deviceObj.AddMember("code",        rapidjson::Value(device.code.c_str(), allocator), allocator);
+        deviceObj.AddMember("ip",          rapidjson::Value(device.ip.c_str(), allocator), allocator);
+        deviceObj.AddMember("comment",     rapidjson::Value(device.comment.c_str(), allocator), allocator);
+
+        deviceArray.PushBack(deviceObj, allocator);
+    }
+
+    content.AddMember("device_list", deviceArray, allocator);
+    doc.AddMember("content", content, allocator);
+
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    doc.Accept(writer);
+
+    json = std::move(buffer.GetString());
+    buffer.Clear();
+    writer.Reset(buffer);
+}
+
+
+
 void JsonEncoder::updateFriendOC(std::string &json, const std::string &oldoc, const std::string &newoc)
 {
     rapidjson::Document doc;

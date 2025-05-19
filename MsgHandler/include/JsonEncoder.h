@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
+#include "GlobalEnum.h"
 #include "rapidjson/document.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
@@ -54,6 +56,7 @@ public:
     static JsonEncoder& getInstance();
     void ResponseJson(std::string& json, const ResponseType& type, const std::string& subtype);
     void DeviceCode(std::string& json, const std::string code);
+    void DeviceList(std::string& json, const std::vector<DeviceInfo> device_list);
     void updateFriendOC(std::string& json,const std::string& oldoc,const std::string& newoc);
     void updateFriendName(std::string& json,const std::string& oc,const std::string& newname);
 public:
