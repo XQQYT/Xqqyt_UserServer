@@ -3,6 +3,7 @@
 #include "TcpServer.h"
 #include "MsgBuilder.h"
 #include "OpensslHandler.h"
+#include "GlobalEnum.h"
 
 static const char* avatar_dir = "User/Avatar/";
 
@@ -17,9 +18,13 @@ JsonStrategy* JsonStrategyFactory::createStrategy(const std::string& type)
     {
         return new RegisterStrategy();
     }
-    if (type == "register_device")
+    else if (type == "register_device")
 	{
         return new RegisterDeviceStrategy();
+	}
+    else if (type == "get_user_device_list")
+	{
+        return new GetDeviceListStrategy();
 	}
 	else
 	{
@@ -160,6 +165,41 @@ void RegisterStrategy::execute(const int socket, uint8_t* key, const rapidjson::
         {
             JsonEncoder::getInstance().ResponseJson(response,ResponseType::FAIL,"register");
         }
+        auto final_msg = MsgBuilder::getInstance().buildMsg(response,key);
+        TcpServer::sendMsg(socket, *final_msg->msg);
+    }
+    else
+    {
+        
+    }
+
+}
+
+void GetDeviceListStrategy::execute(const int socket, uint8_t* key, const rapidjson::Document* content, MySqlDriver* mysql_driver) const
+{
+
+    if(!checkDocument(content))
+    {
+        delete content;
+        return;
+    }
+    if(content->HasMember("user_name"))
+    {
+        std::string username = (*content)["user_name"].GetString();
+
+        
+        auto result = mysql_driver->preExecute("SELECT d.device_name, d.code,d.ip, ud.comment FROM user_device ud JOIN devices d ON ud.device_code = d.code WHERE ud.user_name = ?;", {username});
+        
+        std::vector<DeviceInfo> device_list;
+        while(result->next())
+        {
+            device_list.emplace_back(result->getString("device_name"),
+            result->getString("code"),result->getString("ip"),result->getString("comment"));
+        }
+
+        std::string response;
+        JsonEncoder::getInstance().DeviceList(response,std::move(device_list));
+        std::cout<<response<<std::endl;
         auto final_msg = MsgBuilder::getInstance().buildMsg(response,key);
         TcpServer::sendMsg(socket, *final_msg->msg);
     }
