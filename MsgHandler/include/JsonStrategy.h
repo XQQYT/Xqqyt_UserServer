@@ -38,6 +38,18 @@ public:
     ~GetDeviceListStrategy(){}
 };
 
+class UpdateDeviceCommentStrategy : public JsonStrategy{
+public:
+    void execute(const int socket, uint8_t* key, const rapidjson::Document* content, MySqlDriver* mysql_driver) const override;
+    ~UpdateDeviceCommentStrategy(){}
+};
+
+class DeleteDeviceStrategy : public JsonStrategy{
+public:
+    void execute(const int socket, uint8_t* key, const rapidjson::Document* content, MySqlDriver* mysql_driver) const override;
+    ~DeleteDeviceStrategy(){}
+};
+
 class JsonStrategyFactory {
 public:
     static JsonStrategy* createStrategy(const std::string& type);
