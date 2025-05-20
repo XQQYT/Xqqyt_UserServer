@@ -50,6 +50,12 @@ public:
     ~DeleteDeviceStrategy(){}
 };
 
+class UpdateUserNameStrategy : public JsonStrategy{
+public:
+    void execute(const int socket, uint8_t* key, const rapidjson::Document* content, MySqlDriver* mysql_driver) const override;
+    ~UpdateUserNameStrategy(){}
+};
+
 class JsonStrategyFactory {
 public:
     static JsonStrategy* createStrategy(const std::string& type);

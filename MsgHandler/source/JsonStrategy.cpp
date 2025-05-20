@@ -34,6 +34,10 @@ JsonStrategy* JsonStrategyFactory::createStrategy(const std::string& type)
     {
         return new DeleteDeviceStrategy();
     }
+    else if(type == "update_username")
+    {
+        return new UpdateUserNameStrategy();
+    }
 	else
 	{
 		return nullptr;
@@ -265,12 +269,43 @@ void DeleteDeviceStrategy::execute(const int socket, uint8_t* key, const rapidjs
 
         std::string response;
         try{
-            mysql_driver->preExecute("DELETE FROM user_device WHERE user_name=? AND device_code=?;", {username, device_code});
+            mysql_driver->preExecute("UPDATE user_device SET comment = ? WHERE user_name=? AND device_code=?;", {username, device_code});
             JsonEncoder::getInstance().ResponseJson(response,ResponseType::SUCCESS,"delete_device_result");
         }
         catch(...)
         {
             JsonEncoder::getInstance().ResponseJson(response,ResponseType::FAIL,"delete_device_result");
+        }
+        auto final_msg = MsgBuilder::getInstance().buildMsg(response,key);
+        TcpServer::sendMsg(socket, *final_msg->msg);
+    }
+    else
+    {
+        
+    }
+}
+
+void UpdateUserNameStrategy::execute(const int socket, uint8_t* key, const rapidjson::Document* content, MySqlDriver* mysql_driver) const
+{
+
+    if(!checkDocument(content))
+    {
+        delete content;
+        return;
+    }
+    if(content->HasMember("user_name")&&content->HasMember("new_user_name"))
+    {
+        std::string username = (*content)["user_name"].GetString();
+        std::string new_user_name = (*content)["new_user_name"].GetString();
+
+        std::string response;
+        try{
+            mysql_driver->preExecute("UPDATE users SET user_name = ? WHERE user_name=?;", {new_user_name, username});
+            JsonEncoder::getInstance().ResponseJson(response,ResponseType::SUCCESS,"update_user_name");
+        }
+        catch(...)
+        {
+            JsonEncoder::getInstance().ResponseJson(response,ResponseType::FAIL,"update_user_name");
         }
         auto final_msg = MsgBuilder::getInstance().buildMsg(response,key);
         TcpServer::sendMsg(socket, *final_msg->msg);
