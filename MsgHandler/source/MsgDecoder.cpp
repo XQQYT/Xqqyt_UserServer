@@ -39,7 +39,7 @@ void MsgDecoder::decode(const int socket,std::vector<uint8_t> msg_vec , bool is_
 		if (strategy != nullptr)
 		{
 			//注意传入的数组并没有去除type 的2字节
-			strategy->execute(socket, std::move(msg_vec), mysql_driver);
+			strategy->execute(socket, key, std::move(msg_vec), mysql_driver);
 		}
 		delete strategy;
 	}
