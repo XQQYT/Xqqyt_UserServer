@@ -56,6 +56,13 @@ public:
     ~UpdateUserNameStrategy(){}
 };
 
+class UpdateUserPasswordStrategy : public JsonStrategy{
+    public:
+        void execute(const int socket, uint8_t* key, const rapidjson::Document* content, MySqlDriver* mysql_driver) const override;
+        ~UpdateUserPasswordStrategy(){}
+    };
+    
+
 class JsonStrategyFactory {
 public:
     static JsonStrategy* createStrategy(const std::string& type);

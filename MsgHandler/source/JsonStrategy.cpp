@@ -4,6 +4,7 @@
 #include "MsgBuilder.h"
 #include "OpensslHandler.h"
 #include "GlobalEnum.h"
+#include <filesystem>
 
 static const char* avatar_dir = "User/Avatar/";
 
@@ -37,6 +38,10 @@ JsonStrategy* JsonStrategyFactory::createStrategy(const std::string& type)
     else if(type == "update_username")
     {
         return new UpdateUserNameStrategy();
+    }
+    else if(type == "update_user_password")
+    {
+        return new UpdateUserPasswordStrategy();
     }
 	else
 	{
@@ -93,10 +98,13 @@ void RegisterDeviceStrategy::execute(const int socket, uint8_t* key, const rapid
 
 void LoginStrategy::execute(const int socket, uint8_t* key, const rapidjson::Document* content, MySqlDriver* mysql_driver) const
 {
-
+    std::string response;
     if(!checkDocument(content))
     {
         delete content;
+        JsonEncoder::getInstance().ResponseJson(response,ResponseType::FAIL,"login");
+        auto final_msg = MsgBuilder::getInstance().buildMsg(response,key);
+        TcpServer::sendMsg(socket, *final_msg->msg);
         return;
     }
     if(content->HasMember("user_name")&&content->HasMember("password")&&content->HasMember("device_code"))
@@ -105,25 +113,29 @@ void LoginStrategy::execute(const int socket, uint8_t* key, const rapidjson::Doc
         std::string password = (*content)["password"].GetString();
         std::string device_code = (*content)["device_code"].GetString();
 
-        auto safe_password = OpensslHandler::getInstance().dealPasswordSafe(password);
-
-        std::cout<<"login safe password "<<*safe_password<<std::endl;
-
         auto result = mysql_driver->preExecute("SELECT users.password FROM users WHERE user_name = ?",{username});
-
-        std::string response;
         if(result)
         {
-            result->next();
-            bool status = OpensslHandler::getInstance().verifyPassword(password, result->getString("password"));
-            if(status)
+            if(result->next())
             {
-                JsonEncoder::getInstance().ResponseJson(response,ResponseType::SUCCESS,"login");
-                mysql_driver->preExecute(
-                    "INSERT INTO user_device(user_name, device_code) VALUES(?, ?) "
-                    "ON DUPLICATE KEY UPDATE login_time = CURRENT_TIMESTAMP",
-                    {username, device_code}
-                );
+                bool status = OpensslHandler::getInstance().verifyPassword(password, result->getString("password"));
+                if(status)
+                {
+                    JsonEncoder::getInstance().ResponseJson(response,ResponseType::SUCCESS,"login");
+                    mysql_driver->preExecute(
+                        "INSERT INTO user_device(user_name, device_code) VALUES(?, ?) "
+                        "ON DUPLICATE KEY UPDATE login_time = CURRENT_TIMESTAMP",
+                        {username, device_code}
+                    );
+                }
+                else
+                {
+                    JsonEncoder::getInstance().ResponseJson(response,ResponseType::FAIL,"login");
+                }
+                //发送用户头像
+                std::string avatar_path = std::string(avatar_dir).append(username);
+                auto avatar_msg = MsgBuilder::getInstance().buildFile(MessageType::USER_AVATAR, username, avatar_path,key);
+                TcpServer::sendMsg(socket, *avatar_msg->msg);
             }
             else
             {
@@ -134,28 +146,24 @@ void LoginStrategy::execute(const int socket, uint8_t* key, const rapidjson::Doc
         {   
             JsonEncoder::getInstance().ResponseJson(response,ResponseType::FAIL,"login");
         }
-
-        auto final_msg = MsgBuilder::getInstance().buildMsg(response,key);
-        TcpServer::sendMsg(socket, *final_msg->msg);
-
-        //发送用户头像
-        std::string avatar_path = std::string(avatar_dir).append(username);
-        auto avatar_msg = MsgBuilder::getInstance().buildFile(MessageType::USER_AVATAR, username, avatar_path,key);
-        TcpServer::sendMsg(socket, *avatar_msg->msg);
     }
     else
     {
-        
+        JsonEncoder::getInstance().ResponseJson(response,ResponseType::FAIL,"login");
     }
-
+    auto final_msg = MsgBuilder::getInstance().buildMsg(response,key);
+    TcpServer::sendMsg(socket, *final_msg->msg);
 }
 
 void RegisterStrategy::execute(const int socket, uint8_t* key, const rapidjson::Document* content, MySqlDriver* mysql_driver) const
 {
-
+    std::string response;
     if(!checkDocument(content))
     {
         delete content;
+        JsonEncoder::getInstance().ResponseJson(response,ResponseType::FAIL,"register");
+        auto final_msg = MsgBuilder::getInstance().buildMsg(response,key);
+        TcpServer::sendMsg(socket, *final_msg->msg);
         return;
     }
     if(content->HasMember("user_name")&&content->HasMember("password"))
@@ -166,9 +174,6 @@ void RegisterStrategy::execute(const int socket, uint8_t* key, const rapidjson::
 
         auto safe_password = OpensslHandler::getInstance().dealPasswordSafe(password);
 
-        std::cout<<"register safe password "<<*safe_password<<std::endl;
-
-        std::string response;
         try{
             mysql_driver->preExecute("INSERT INTO users(user_name, password, avatar_url) VALUES(? , ? , ?)", {username, *safe_password, avatar_path});
             JsonEncoder::getInstance().ResponseJson(response,ResponseType::SUCCESS,"register");
@@ -299,13 +304,65 @@ void UpdateUserNameStrategy::execute(const int socket, uint8_t* key, const rapid
         std::string new_user_name = (*content)["new_user_name"].GetString();
 
         std::string response;
+        std::string old_avatar_path = "User/Avatar/" + username;
+        std::string new_avatar_path = "User/Avatar/" + new_user_name;
         try{
+            std::filesystem::rename(old_avatar_path, new_avatar_path);
             mysql_driver->preExecute("UPDATE users SET user_name = ? WHERE user_name=?;", {new_user_name, username});
             JsonEncoder::getInstance().ResponseJson(response,ResponseType::SUCCESS,"update_user_name");
-        }
-        catch(...)
-        {
+        }catch(...){
+            std::filesystem::rename(new_avatar_path, old_avatar_path);
+            mysql_driver->preExecute("UPDATE users SET user_name = ? WHERE user_name=?;", {username, new_user_name});
             JsonEncoder::getInstance().ResponseJson(response,ResponseType::FAIL,"update_user_name");
+        }
+        auto final_msg = MsgBuilder::getInstance().buildMsg(response,key);
+        TcpServer::sendMsg(socket, *final_msg->msg);
+    }
+    else
+    {
+        
+    }
+}
+
+void UpdateUserPasswordStrategy::execute(const int socket, uint8_t* key, const rapidjson::Document* content, MySqlDriver* mysql_driver) const
+{
+
+    if(!checkDocument(content))
+    {
+        delete content;
+        return;
+    }
+    if(content->HasMember("user_name")&&content->HasMember("old_password")&&content->HasMember("new_password"))
+    {
+        std::string username = (*content)["user_name"].GetString();
+        std::string old_password = (*content)["old_password"].GetString();
+        std::string new_password = (*content)["new_password"].GetString();
+
+        auto result = mysql_driver->preExecute("SELECT users.password FROM users WHERE user_name = ?",{username});
+
+        std::string response;
+        if(result)
+        {
+            result->next();
+            bool status = OpensslHandler::getInstance().verifyPassword(old_password, result->getString("password"));
+            if(status)
+            {
+                try{
+                    auto safe_password = OpensslHandler::getInstance().dealPasswordSafe(new_password);
+                    mysql_driver->preExecute("UPDATE users SET password = ? WHERE user_name=?;",{*safe_password, username});
+                    JsonEncoder::getInstance().ResponseJson(response,ResponseType::SUCCESS,"update_user_password");
+                }catch(...){
+                    JsonEncoder::getInstance().ResponseJson(response,ResponseType::FAIL,"update_user_password");
+                }
+            }
+            else
+            {
+                JsonEncoder::getInstance().ResponseJson(response,ResponseType::FAIL,"update_user_password");
+            }
+        }
+        else
+        {   
+            JsonEncoder::getInstance().ResponseJson(response,ResponseType::FAIL,"update_user_password");
         }
         auto final_msg = MsgBuilder::getInstance().buildMsg(response,key);
         TcpServer::sendMsg(socket, *final_msg->msg);
