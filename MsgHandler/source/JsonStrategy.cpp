@@ -26,6 +26,14 @@ JsonStrategy* JsonStrategyFactory::createStrategy(const std::string& type)
 	{
         return new GetDeviceListStrategy();
 	}
+    else if(type == "update_device_comment")
+    {
+        return new UpdateDeviceCommentStrategy();
+    }
+    else if(type == "delete_device")
+    {
+        return new DeleteDeviceStrategy();
+    }
 	else
 	{
 		return nullptr;
@@ -97,7 +105,7 @@ void LoginStrategy::execute(const int socket, uint8_t* key, const rapidjson::Doc
 
         std::cout<<"login safe password "<<*safe_password<<std::endl;
 
-        auto result = mysql_driver->preExecute("SELECT users.password FROM users WHERE username = ?",{username});
+        auto result = mysql_driver->preExecute("SELECT users.password FROM users WHERE user_name = ?",{username});
 
         std::string response;
         if(result)
@@ -158,7 +166,7 @@ void RegisterStrategy::execute(const int socket, uint8_t* key, const rapidjson::
 
         std::string response;
         try{
-            mysql_driver->preExecute("INSERT INTO users(username, password, avatar_url) VALUES(? , ? , ?)", {username, *safe_password, avatar_path});
+            mysql_driver->preExecute("INSERT INTO users(user_name, password, avatar_url) VALUES(? , ? , ?)", {username, *safe_password, avatar_path});
             JsonEncoder::getInstance().ResponseJson(response,ResponseType::SUCCESS,"register");
         }
         catch(...)
@@ -208,4 +216,67 @@ void GetDeviceListStrategy::execute(const int socket, uint8_t* key, const rapidj
         
     }
 
+}
+
+void UpdateDeviceCommentStrategy::execute(const int socket, uint8_t* key, const rapidjson::Document* content, MySqlDriver* mysql_driver) const
+{
+
+    if(!checkDocument(content))
+    {
+        delete content;
+        return;
+    }
+    if(content->HasMember("user_name")&&content->HasMember("device_code")&&content->HasMember("new_comment"))
+    {
+        std::string username = (*content)["user_name"].GetString();
+        std::string device_code = (*content)["device_code"].GetString();
+        std::string new_comment = (*content)["new_comment"].GetString();
+
+        std::string response;
+        try{
+            mysql_driver->preExecute("UPDATE user_device SET comment = ? WHERE user_name=? AND device_code=?;", {new_comment, username, device_code});
+            JsonEncoder::getInstance().ResponseJson(response,ResponseType::SUCCESS,"update_device_comment_result");
+        }
+        catch(...)
+        {
+            JsonEncoder::getInstance().ResponseJson(response,ResponseType::FAIL,"update_device_comment_result");
+        }
+        auto final_msg = MsgBuilder::getInstance().buildMsg(response,key);
+        TcpServer::sendMsg(socket, *final_msg->msg);
+    }
+    else
+    {
+        
+    }
+}
+
+void DeleteDeviceStrategy::execute(const int socket, uint8_t* key, const rapidjson::Document* content, MySqlDriver* mysql_driver) const
+{
+
+    if(!checkDocument(content))
+    {
+        delete content;
+        return;
+    }
+    if(content->HasMember("user_name")&&content->HasMember("device_code"))
+    {
+        std::string username = (*content)["user_name"].GetString();
+        std::string device_code = (*content)["device_code"].GetString();
+
+        std::string response;
+        try{
+            mysql_driver->preExecute("DELETE FROM user_device WHERE user_name=? AND device_code=?;", {username, device_code});
+            JsonEncoder::getInstance().ResponseJson(response,ResponseType::SUCCESS,"delete_device_result");
+        }
+        catch(...)
+        {
+            JsonEncoder::getInstance().ResponseJson(response,ResponseType::FAIL,"delete_device_result");
+        }
+        auto final_msg = MsgBuilder::getInstance().buildMsg(response,key);
+        TcpServer::sendMsg(socket, *final_msg->msg);
+    }
+    else
+    {
+        
+    }
 }
