@@ -9,7 +9,7 @@
 #include "MsgDecoder.h"
 #include <functional>
 
-void Server::dealClient(const int socket, uint8_t* msg, uint32_t length ,uint8_t* key, MySqlDriver* mysql_driver)
+void Server::dealClient(const int socket, uint8_t* msg, uint32_t length ,uint8_t* key, std::shared_ptr<MySqlConnPool> conn_pool)
 {
     std::cout<<"进入业务代码解析"<<std::endl;
     auto parsed = OpensslHandler::getInstance().parseMsgPayload(msg,length);
@@ -19,7 +19,7 @@ void Server::dealClient(const int socket, uint8_t* msg, uint32_t length ,uint8_t
     {
         result_vec.resize(result_vec.size() - 4);
         
-        MsgDecoder::decode(socket, std::move(result_vec), parsed.is_binary, key, mysql_driver);
+        MsgDecoder::decode(socket, result_vec, parsed.is_binary, key, conn_pool);
     }
 }
 
@@ -81,9 +81,7 @@ void Server::haveNewClientMsg(const int socket)
         return;
     deal_msg_thread_pool->addTask(
         [=, msg = std::move(msg)]() mutable {
-            auto conn_guard = MySqlConnGuardPtr(mysql_conn_pool);
-            if (!conn_guard.valid()) return;
-            dealClient(socket, msg.ptr, msg.len, socket_aeskey[socket], conn_guard.get());
+            dealClient(socket, msg.ptr, msg.len, socket_aeskey[socket], mysql_conn_pool);
             delete[] msg.ptr;
         }
     );
