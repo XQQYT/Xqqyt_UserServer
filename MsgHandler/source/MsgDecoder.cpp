@@ -1,6 +1,6 @@
 #include "MsgDecoder.h"
 
-void MsgDecoder::decode(const int socket,std::vector<uint8_t> msg_vec , bool is_binary, uint8_t* key, MySqlDriver* mysql_driver)
+void MsgDecoder::decode(const int socket,std::vector<uint8_t>& msg_vec , bool is_binary, uint8_t* key, std::shared_ptr<MySqlConnPool> conn_pool)
 {
 
 	if(!is_binary)
@@ -19,15 +19,16 @@ void MsgDecoder::decode(const int socket,std::vector<uint8_t> msg_vec , bool is_
 			if (doc.HasMember("content") && doc["content"].IsObject())
 			{
 				rapidjson::Value& json_content = doc["content"].GetObject();
-				rapidjson::Document* doc_content=new rapidjson::Document;
-				doc_content->CopyFrom(json_content,doc_content->GetAllocator());
-				auto strategy= JsonStrategyFactory::createStrategy(type);
-				if (strategy)
-				{
-					strategy->execute(socket, key, doc_content, mysql_driver);
+				rapidjson::Document doc_content;
+				doc_content.CopyFrom(json_content, doc_content.GetAllocator());
+
+				auto strategy = JsonStrategyFactory::createStrategy(type);
+				if (strategy) {
+					auto conn_guard = MySqlConnGuardPtr(conn_pool);
+					if (!conn_guard.valid()) return;
+					strategy->execute(socket, key, doc_content, conn_guard.get());
 					delete strategy;
 				}
-				delete doc_content;
 			}
 		}
 	}
@@ -39,7 +40,7 @@ void MsgDecoder::decode(const int socket,std::vector<uint8_t> msg_vec , bool is_
 		if (strategy != nullptr)
 		{
 			//注意传入的数组并没有去除type 的2字节
-			strategy->execute(socket, std::move(msg_vec), mysql_driver);
+			strategy->execute(socket, key, std::move(msg_vec));
 		}
 		delete strategy;
 	}

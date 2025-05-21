@@ -8,7 +8,7 @@
 
 class MsgDecoder {
 public:
-    static void decode(const int socket, std::vector<uint8_t> msg, bool is_binary, uint8_t* key, MySqlDriver* mysql_driver);
+    static void decode(const int socket, std::vector<uint8_t>& msg, bool is_binary, uint8_t* key, std::shared_ptr<MySqlConnPool> conn_pool);
 private:
     MsgDecoder();
     MsgDecoder(MsgDecoder&) = delete;
