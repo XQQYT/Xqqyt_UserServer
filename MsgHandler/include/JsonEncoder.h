@@ -57,8 +57,7 @@ public:
     void ResponseJson(std::string& json, const ResponseType& type, const std::string& subtype);
     void DeviceCode(std::string& json, const std::string code);
     void DeviceList(std::string& json, const std::vector<DeviceInfo> device_list);
-    void updateFriendOC(std::string& json,const std::string& oldoc,const std::string& newoc);
-    void updateFriendName(std::string& json,const std::string& oc,const std::string& newname);
+    void LastestVersion(std::string& json, const std::string& version, const std::string& description, const std::string& date);
 public:
     void OkMsg(std::string& json,OKType type);
     void ErrorMsg(std::string& json,ErrorType type);

@@ -73,6 +73,32 @@ void JsonEncoder::DeviceCode(std::string& json, const std::string code)
     writer.Reset(buffer);
 }
 
+void JsonEncoder::LastestVersion(std::string& json, const std::string& version, const std::string& description, const std::string& date)
+{
+	rapidjson::Document doc;
+	doc.SetObject();
+
+	auto& doc_allocator = doc.GetAllocator();
+
+
+	doc.AddMember("type", rapidjson::StringRef("lastest_version"), doc_allocator);
+
+	doc.AddMember("content", rapidjson::Value().SetObject(), doc_allocator);
+
+    doc["content"].AddMember("version", rapidjson::StringRef(version.c_str()), doc_allocator);
+    doc["content"].AddMember("description", rapidjson::StringRef(description.c_str()), doc_allocator);
+    doc["content"].AddMember("date", rapidjson::StringRef(date.c_str()), doc_allocator);
+
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+
+	doc.Accept(writer);
+
+	json = std::move(buffer.GetString());
+	buffer.Clear();
+    writer.Reset(buffer);
+}
+
 void JsonEncoder::DeviceList(std::string& json, const std::vector<DeviceInfo> device_list)
 {
     rapidjson::Document doc;
@@ -104,91 +130,6 @@ void JsonEncoder::DeviceList(std::string& json, const std::vector<DeviceInfo> de
     doc.Accept(writer);
 
     json = std::move(buffer.GetString());
-    buffer.Clear();
-    writer.Reset(buffer);
-}
-
-
-
-void JsonEncoder::updateFriendOC(std::string &json, const std::string &oldoc, const std::string &newoc)
-{
-    rapidjson::Document doc;
-    doc.SetObject();
-
-    auto& doc_allocator = doc.GetAllocator();
-
-
-    doc.AddMember("type", rapidjson::StringRef("ocupdate"), doc_allocator);
-
-    doc.AddMember("content", rapidjson::Value().SetObject(), doc_allocator);
-
-    doc["content"].AddMember("oldoc", rapidjson::StringRef(oldoc.c_str()), doc_allocator);
-    doc["content"].AddMember("newoc", rapidjson::StringRef(newoc.c_str()), doc_allocator);
-
-    rapidjson::StringBuffer buffer;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-
-    doc.Accept(writer);
-
-    json = std::move(buffer.GetString());
-    buffer.Clear();
-    writer.Reset(buffer);
-}
-
-void JsonEncoder::updateFriendName(std::string &json, const std::string &oc, const std::string &newname)
-{
-    rapidjson::Document doc;
-    doc.SetObject();
-
-    auto& doc_allocator = doc.GetAllocator();
-
-
-    doc.AddMember("type", rapidjson::StringRef("nameupdate"), doc_allocator);
-
-    doc.AddMember("content", rapidjson::Value().SetObject(), doc_allocator);
-
-    doc["content"].AddMember("oc", rapidjson::StringRef(oc.c_str()), doc_allocator);
-    doc["content"].AddMember("newname", rapidjson::StringRef(newname.c_str()), doc_allocator);
-
-    rapidjson::StringBuffer buffer;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-
-    doc.Accept(writer);
-
-    json = std::move(buffer.GetString());
-    buffer.Clear();
-    writer.Reset(buffer);
-}
-
-
-
-void JsonEncoder::OkMsg(std::string& json,OKType type)
-{
-    rapidjson::Document doc;
-    doc.SetObject();
-    rapidjson::StringBuffer buffer;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-
-    auto& doc_allocator = doc.GetAllocator();
-
-    switch (type) {
-    case OKType::SIGNUP:
-        doc.AddMember("type", rapidjson::StringRef("signup_ok"), doc_allocator);
-        break;
-    default:
-
-        buffer.Clear();
-        writer.Reset(buffer);
-        return;
-
-    }
-
-    doc.AddMember("type", rapidjson::StringRef("signup_ok"), doc_allocator);
-
-    doc.AddMember("content", rapidjson::Value().SetObject(), doc_allocator);
-
-    doc.Accept(writer);
-    json=std::move(buffer.GetString());
     buffer.Clear();
     writer.Reset(buffer);
 }

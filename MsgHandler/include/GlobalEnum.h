@@ -5,7 +5,14 @@
 #include <string>
 
 enum class MessageType : uint16_t {
-    USER_AVATAR = 0xAEAE            
+    USER_AVATAR = 0xAEAE,
+    VERSION_PACKAGE = 0xBEBE     
+};
+
+enum class SubMessageType : uint16_t{
+    HEADER = 0xAAAA,
+    PAYLOAD = 0xABAB,
+    END = 0xACAC
 };
 
 struct DeviceInfo

@@ -64,7 +64,7 @@ public:
 
     static void write(const int socket, const char* msg,int len);
     static void sendMsg(const int socket, std::vector<uint8_t> msg);
-
+	static void sendMsg(const int socket, const uint8_t* data, uint64_t length);
     RecvMsg recvMsg(const int socket);
 
 	static struct SocketInfo getSocketInfo(const int socket);

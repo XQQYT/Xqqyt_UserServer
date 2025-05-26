@@ -42,6 +42,9 @@ public:
     ~MsgBuilder(){}
     std::unique_ptr<UserMsg> buildMsg(std::string payload, const uint8_t* key);
     std::unique_ptr<UserMsg> buildFile(MessageType type,std::string username, std::string path, uint8_t* key);
+    std::unique_ptr<std::vector<uint8_t>> buildHeader(MessageType type, uint32_t totalsize);
+    std::unique_ptr<std::vector<uint8_t>> buildPayload(MessageType type, std::vector<char>& data);
+    std::unique_ptr<std::vector<uint8_t>> buildEnd(MessageType type);
 
 private:
     MsgBuilder(){};
