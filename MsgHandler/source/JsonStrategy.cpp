@@ -5,6 +5,9 @@
 #include "OpensslHandler.h"
 #include "GlobalEnum.h"
 #include <filesystem>
+#include <endian.h>  // For htobe64
+#include <arpa/inet.h> // For htons
+#include <fstream>
 
 static const char* avatar_dir = "User/Avatar/";
 
@@ -42,6 +45,13 @@ JsonStrategy* JsonStrategyFactory::createStrategy(const std::string& type)
     else if(type == "update_user_password")
     {
         return new UpdateUserPasswordStrategy();
+    }
+    else if(type == "get_lastest_version")
+    {
+        return new GetLastestVersionStrategy();
+    }else if(type == "get_version_package")
+    {
+        return new GetVersionPackageStrategy();
     }
 	else
 	{
@@ -397,4 +407,93 @@ void UpdateUserPasswordStrategy::execute(const int socket, uint8_t* key, const r
 
     auto final_msg = MsgBuilder::getInstance().buildMsg(response, key);
     TcpServer::sendMsg(socket, *final_msg->msg);
+}
+
+void GetLastestVersionStrategy::execute(const int socket, uint8_t* key, const rapidjson::Document& content, MySqlDriver* mysql_driver) const {
+    
+    std::string response;
+
+    do {
+        sql::ResultSet * result;
+        try{
+            result = mysql_driver->preExecute("SELECT version,description,release_date FROM version ORDER BY release_date DESC LIMIT 1;");
+        }
+        catch(...){
+            break;
+        }
+        
+        if (!result || !result->next()) break;
+
+        std::string version = result->getString("version");
+        std::string description = result->getString("description");
+        std::string release_date = result->getString("release_date");
+
+        JsonEncoder::getInstance().LastestVersion(response, version, description, release_date);
+        auto final_msg = MsgBuilder::getInstance().buildMsg(response, key);
+        TcpServer::sendMsg(socket, *final_msg->msg);
+        return;
+    } while (false);
+
+    if (response.empty())
+        JsonEncoder::getInstance().ResponseJson(response, ResponseType::FAIL, "get_lastest_version_result");
+
+    auto final_msg = MsgBuilder::getInstance().buildMsg(response, key);
+    TcpServer::sendMsg(socket, *final_msg->msg);
+}
+
+void GetVersionPackageStrategy::execute(const int socket, uint8_t* key, const rapidjson::Document& content, MySqlDriver* mysql_driver) const {
+    std::string response;
+    do {
+        sql::ResultSet * result;
+        try {
+            result = mysql_driver->preExecute("SELECT package_path FROM version ORDER BY release_date DESC LIMIT 1;");
+        } catch (...) {
+            break;
+        }
+
+        if (!result || !result->next()) break;
+
+        std::string package_path = result->getString("package_path");
+        std::ifstream package_stream(package_path, std::ios::binary | std::ios::ate);
+        if (!package_stream.is_open()) {
+            std::cout<<"open failed "<<package_path<<std::endl;
+            break;
+        }
+
+        uint64_t total_size = package_stream.tellg();
+        package_stream.seekg(0, std::ios::beg);
+
+        const std::size_t chunk_size = 4096;
+        std::vector<char> buffer(chunk_size);
+        uint64_t sent_size = 0;
+
+        auto header_buf = MsgBuilder::getInstance().buildHeader(MessageType::VERSION_PACKAGE, total_size);
+        TcpServer::sendMsg(socket, *header_buf);
+
+        // // --- 发送数据块 ---
+        while (package_stream) {
+            package_stream.read(buffer.data(), chunk_size);
+            std::streamsize bytes_read = package_stream.gcount();
+            if (bytes_read <= 0) break;
+        
+            auto send_buf = MsgBuilder::getInstance().buildPayload(MessageType::VERSION_PACKAGE, buffer);
+            TcpServer::sendMsg(socket, *send_buf);
+            sent_size += bytes_read;
+        }
+
+        auto end_buf = MsgBuilder::getInstance().buildEnd(MessageType::VERSION_PACKAGE);
+        TcpServer::sendMsg(socket, *end_buf);
+
+        package_stream.close();
+
+        return;
+    } while (false);
+
+    // --- 发送错误响应 ---
+    if (response.empty()) {
+        JsonEncoder::getInstance().ResponseJson(response, ResponseType::FAIL, "get_version_package_result");
+        auto final_msg = MsgBuilder::getInstance().buildMsg(response, key);
+        TcpServer::sendMsg(socket, *final_msg->msg);
+        std::cout<<"send error response"<<std::endl;
+    }
 }

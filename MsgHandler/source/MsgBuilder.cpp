@@ -5,6 +5,8 @@
 #include "OpensslHandler.h"
 #include <fstream>
 
+static uint16_t no_encrypy_magic = 0xAFAF;
+
 std::unique_ptr<MsgBuilder::UserMsg> MsgBuilder::buildMsg(std::string payload, const uint8_t* key)
 {
     Header header;
@@ -130,4 +132,56 @@ std::unique_ptr<MsgBuilder::UserMsg> MsgBuilder::buildFile(MessageType type,std:
     user_msg->msg = std::make_unique<std::vector<uint8_t>>(std::move(msg));
 
     return user_msg;
+}
+
+// AFAF size type subtype payload
+//  2    4    2      2       N
+std::unique_ptr<std::vector<uint8_t>> MsgBuilder::buildHeader(MessageType type, uint32_t totalsize)
+{
+    uint16_t offset = 0;
+    auto msg = std::make_unique<std::vector<uint8_t>>(2 + 4 + 2 + 2 + 4);
+    memcpy(msg->data() + offset, &no_encrypy_magic,sizeof(no_encrypy_magic)); offset += sizeof(no_encrypy_magic);
+    uint32_t size = 8;
+    uint32_t size_be = htonl(size);
+    memcpy(msg->data() + offset,&size_be,sizeof(size_be)); offset += sizeof(size_be);
+    uint16_t maintype = htons(static_cast<uint16_t>(type));
+    memcpy(msg->data() + offset,&maintype, sizeof(maintype));   offset += sizeof(maintype);
+    uint16_t subtype = htons(static_cast<uint16_t>(SubMessageType::HEADER));
+    memcpy(msg->data() + offset,&subtype,sizeof(subtype)); offset += sizeof(subtype);
+    uint32_t total_size_be = htonl(totalsize);
+    memcpy(msg->data() + offset,&total_size_be,sizeof(total_size_be));
+    return msg;
+}
+
+std::unique_ptr<std::vector<uint8_t>> MsgBuilder::buildPayload(MessageType type, std::vector<char>& data)
+{
+    uint16_t offset = 0;
+    auto msg = std::make_unique<std::vector<uint8_t>>(2 + 4 + 2 + 2 + data.size());
+    memcpy(msg->data() + offset, &no_encrypy_magic,sizeof(no_encrypy_magic)); offset += sizeof(no_encrypy_magic);
+    uint32_t size = 2 + 2 + data.size();
+    uint32_t size_be = htonl(size);
+    memcpy(msg->data() + offset,&size_be,sizeof(size_be)); 
+    offset += sizeof(size_be);
+    uint16_t maintype = htons(static_cast<uint16_t>(type));
+    memcpy(msg->data() + offset,&maintype, sizeof(maintype));   offset += sizeof(maintype);
+    uint16_t subtype = htons(static_cast<uint16_t>(SubMessageType::PAYLOAD));
+    memcpy(msg->data() + offset,&subtype,sizeof(subtype)); offset += sizeof(subtype);
+    memcpy(msg->data() + offset,data.data(),data.size());
+    return msg;
+}
+
+std::unique_ptr<std::vector<uint8_t>> MsgBuilder::buildEnd(MessageType type)
+{
+    uint16_t offset = 0;
+    auto msg = std::make_unique<std::vector<uint8_t>>(2 + 4 + 2 + 2 + 0);
+    memcpy(msg->data() + offset, &no_encrypy_magic,sizeof(no_encrypy_magic)); offset += sizeof(no_encrypy_magic);
+    uint32_t size = 2 + 2 + 0;
+    uint32_t size_be = htonl(size);
+    memcpy(msg->data() + offset,&size_be,sizeof(size_be)); 
+    offset += sizeof(size_be);
+    uint16_t maintype = htons(static_cast<uint16_t>(type));
+    memcpy(msg->data() + offset,&maintype, sizeof(maintype));   offset += sizeof(maintype);
+    uint16_t subtype = htons(static_cast<uint16_t>(SubMessageType::END));
+    memcpy(msg->data() + offset,&subtype,sizeof(subtype)); offset += sizeof(subtype);
+    return msg;
 }

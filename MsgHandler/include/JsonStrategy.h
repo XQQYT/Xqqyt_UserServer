@@ -57,11 +57,22 @@ public:
 };
 
 class UpdateUserPasswordStrategy : public JsonStrategy{
-    public:
-        void execute(const int socket, uint8_t* key, const rapidjson::Document& content, MySqlDriver* mysql_driver) const override;
-        ~UpdateUserPasswordStrategy(){}
-    };
-    
+public:
+    void execute(const int socket, uint8_t* key, const rapidjson::Document& content, MySqlDriver* mysql_driver) const override;
+    ~UpdateUserPasswordStrategy(){}
+};
+
+class GetLastestVersionStrategy : public JsonStrategy{
+public:
+    void execute(const int socket, uint8_t* key, const rapidjson::Document& content, MySqlDriver* mysql_driver) const override;
+    ~GetLastestVersionStrategy(){}
+};
+
+class GetVersionPackageStrategy : public JsonStrategy{
+public:
+    void execute(const int socket, uint8_t* key, const rapidjson::Document& content, MySqlDriver* mysql_driver) const override;
+    ~GetVersionPackageStrategy(){}
+};
 
 class JsonStrategyFactory {
 public:

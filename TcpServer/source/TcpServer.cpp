@@ -187,6 +187,30 @@ void TcpServer::sendMsg(const int socket, std::vector<uint8_t>  msg)
 
 }
 
+void TcpServer::sendMsg(const int socket, const uint8_t* data, uint64_t length) {
+    int total = static_cast<int>(length);
+    int send_done = 0;
+    int block = 0;
+
+    try {
+        while (send_done < total) {
+            if (total - send_done < s_send_block_size)
+                block = total - send_done;
+            else
+                block = s_send_block_size;
+
+            int sent = send(socket, data + send_done, block, 0);
+            if (sent <= 0) {
+                std::cerr << "Send failed or connection closed\n";
+                break; 
+            }
+            send_done += sent;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Exception during send: " << e.what() << std::endl;
+    }
+}
+
 void TcpServer::write(const int socket, const char* msg,int len)
 {
     send(socket, msg, len, 0);
